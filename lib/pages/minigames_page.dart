@@ -4,6 +4,8 @@ import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
 import '../widgets/cute_bear_avatar.dart';
 import 'boba_catch_game_page.dart';
+import 'boba_stack_game_page.dart';
+import 'tea_time_dash_game_page.dart';
 
 class MinigamesPage extends StatefulWidget {
   const MinigamesPage({
@@ -20,19 +22,35 @@ class MinigamesPage extends StatefulWidget {
 }
 
 class _MinigamesPageState extends State<MinigamesPage> {
-  Future<void> _openBobaCatch() async {
+  Future<void> _openGame(Widget page) async {
     await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (context) => BobaCatchGamePage(
-          player: widget.player,
-          gameState: widget.gameState,
-        ),
-      ),
+      MaterialPageRoute<void>(builder: (context) => page),
     );
     if (mounted) {
       setState(() {});
     }
   }
+
+  Future<void> _openBobaCatch() => _openGame(
+        BobaCatchGamePage(
+          player: widget.player,
+          gameState: widget.gameState,
+        ),
+      );
+
+  Future<void> _openBobaStack() => _openGame(
+        BobaStackGamePage(
+          player: widget.player,
+          gameState: widget.gameState,
+        ),
+      );
+
+  Future<void> _openTeaTimeDash() => _openGame(
+        TeaTimeDashGamePage(
+          player: widget.player,
+          gameState: widget.gameState,
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -125,22 +143,26 @@ class _MinigamesPageState extends State<MinigamesPage> {
                           emoji: '🧋',
                           description:
                               'Catch falling boba pearls with your cup! Earn up to 15 coins.',
-                          isPlayable: true,
+                          playKey: const Key('minigame_play_boba_catch'),
                           onTap: _openBobaCatch,
                         ),
                         _MinigameCard(
                           width: cardWidth,
                           title: 'Boba Stack',
                           emoji: '🥛',
-                          description: 'Stack cups as high as you can.',
-                          isPlayable: false,
+                          description:
+                              'Stack cups as high as you can! Earn 1 coin per 2 cups.',
+                          playKey: const Key('minigame_play_boba_stack'),
+                          onTap: _openBobaStack,
                         ),
                         _MinigameCard(
                           width: cardWidth,
                           title: 'Tea Time Dash',
                           emoji: '🍵',
-                          description: 'Race to brew the perfect cup.',
-                          isPlayable: false,
+                          description:
+                              'Brew drinks in order! Earn 2 coins per completed drink.',
+                          playKey: const Key('minigame_play_tea_time_dash'),
+                          onTap: _openTeaTimeDash,
                         ),
                       ],
                     ),
@@ -213,16 +235,16 @@ class _MinigameCard extends StatelessWidget {
     required this.title,
     required this.emoji,
     required this.description,
-    required this.isPlayable,
-    this.onTap,
+    required this.onTap,
+    this.playKey,
   });
 
   final double width;
   final String title;
   final String emoji;
   final String description;
-  final bool isPlayable;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
+  final Key? playKey;
 
   @override
   Widget build(BuildContext context) {
@@ -233,7 +255,7 @@ class _MinigameCard extends StatelessWidget {
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: isPlayable ? onTap : null,
+          onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -252,24 +274,6 @@ class _MinigameCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (!isPlayable)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'Soon',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -280,16 +284,11 @@ class _MinigameCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                if (isPlayable)
-                  FilledButton(
-                    onPressed: onTap,
-                    child: const Text('Play'),
-                  )
-                else
-                  OutlinedButton(
-                    onPressed: null,
-                    child: const Text('Coming later'),
-                  ),
+                FilledButton(
+                  key: playKey,
+                  onPressed: onTap,
+                  child: const Text('Play'),
+                ),
               ],
             ),
           ),

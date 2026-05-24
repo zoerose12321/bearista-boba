@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:bearista_boba/main.dart';
 import 'package:bearista_boba/models/seating_assignment.dart';
+import 'package:bearista_boba/pages/tea_time_dash_game_page.dart';
 import 'package:bearista_boba/services/coin_reward_service.dart';
 
 Future<void> _enterShop(
@@ -226,10 +227,12 @@ Future<void> _openMinigamesHub(WidgetTester tester) async {
 void main() {
   setUp(() {
     SeatingAssignment.testRandom = Random(42);
+    TeaTimeDashGamePage.testSequenceIndex = 0;
   });
 
   tearDown(() {
     SeatingAssignment.testRandom = null;
+    TeaTimeDashGamePage.testSequenceIndex = null;
     CoinRewardService.rollRewardOverride = null;
   });
 
@@ -348,14 +351,17 @@ void main() {
 
     expect(find.text('Boba Games'), findsOneWidget);
     expect(find.text('Boba Catch'), findsOneWidget);
-    expect(find.text('Play'), findsOneWidget);
+    expect(find.text('Boba Stack'), findsOneWidget);
+    expect(find.text('Tea Time Dash'), findsOneWidget);
+    expect(find.text('Play'), findsNWidgets(3));
+    expect(find.text('Coming later'), findsNothing);
   });
 
   testWidgets('Boba Catch awards capped coins once per round', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
     await _openMinigamesHub(tester);
 
-    await tester.tap(find.text('Play'));
+    await tester.tap(find.byKey(const Key('minigame_play_boba_catch')));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Start Game'));
@@ -372,5 +378,57 @@ void main() {
 
     expect(find.byKey(const Key('boba_catch_left')), findsOneWidget);
     expect(find.textContaining('Score: 0'), findsWidgets);
+  });
+
+  testWidgets('Boba Stack stacks cups and finishes round', (WidgetTester tester) async {
+    await tester.pumpWidget(const BearistaBobaApp());
+    await _openMinigamesHub(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('minigame_play_boba_stack')));
+    await tester.tap(find.byKey(const Key('minigame_play_boba_stack')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start Game'));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('boba_stack_cup')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('boba_stack_cup')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('boba_stack_cup')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('boba_stack_cup')));
+    await tester.pump();
+
+    expect(find.text('Cups: 4'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 21));
+
+    expect(find.textContaining('Cups stacked: 4'), findsOneWidget);
+    expect(find.textContaining('+2 coins earned!'), findsOneWidget);
+  });
+
+  testWidgets('Tea Time Dash completes a drink sequence', (WidgetTester tester) async {
+    await tester.pumpWidget(const BearistaBobaApp());
+    await _openMinigamesHub(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('minigame_play_tea_time_dash')));
+    await tester.tap(find.byKey(const Key('minigame_play_tea_time_dash')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start Game'));
+    await tester.pump();
+
+    for (final step in ['Tea', 'Milk', 'Boba', 'Shake', 'Serve']) {
+      await tester.tap(find.byKey(Key('tea_dash_$step')));
+      await tester.pump();
+    }
+
+    expect(find.text('Drinks: 1'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 21));
+
+    expect(find.textContaining('Drinks completed: 1'), findsOneWidget);
+    expect(find.textContaining('+2 coins earned!'), findsOneWidget);
   });
 }
