@@ -32,6 +32,40 @@ class _RestaurantZones {
   static const walkPath = _Zone(0.22, 0.38, 0.58, 0.78);
 }
 
+/// Centers and proportionally scales the restaurant scene to fit the viewport.
+class ShopSceneViewport extends StatelessWidget {
+  const ShopSceneViewport({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final sceneSize = ShopSceneLayout.sceneSizeFor(
+          constraints.maxWidth,
+          constraints.maxHeight,
+        );
+
+        return Center(
+          child: SizedBox(
+            width: sceneSize.width,
+            height: sceneSize.height,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: SizedBox(
+                width: ShopSceneLayout.designWidth,
+                height: ShopSceneLayout.designHeight,
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class CartoonShopScene extends StatelessWidget {
   const CartoonShopScene({
     super.key,
@@ -100,23 +134,21 @@ class CartoonShopScene extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final size = Size(constraints.maxWidth, constraints.maxHeight);
-        final tableW = (size.width *
-                _RestaurantZones.seatingA.width *
-                0.45 *
-                RestaurantSceneScale.furniture)
-            .clamp(48.0, 68.0);
-        final tableH = tableW * 0.65;
-        final playerHalfW = RestaurantSceneScale.playerBearSize * 0.55;
-        final playerOffsetY = RestaurantSceneScale.playerBearSize * 1.55;
-        final customerHalfW = RestaurantSceneScale.customerBearSize * 0.95;
+    final size = ShopSceneLayout.designSize;
+    final tableW = (ShopSceneLayout.designWidth *
+            _RestaurantZones.seatingA.width *
+            0.45 *
+            RestaurantSceneScale.furniture)
+        .clamp(48.0, 68.0);
+    final tableH = tableW * 0.65;
+    final playerHalfW = RestaurantSceneScale.playerBearSize * 0.55;
+    final playerOffsetY = RestaurantSceneScale.playerBearSize * 1.55;
+    final customerHalfW = RestaurantSceneScale.customerBearSize * 0.95;
 
-        final playerPos = _normToScene(playerNormX, playerNormY, size);
-        final customerRect = _zoneRect(_RestaurantZones.customerArea, size);
+    final playerPos = _normToScene(playerNormX, playerNormY, size);
+    final customerRect = _zoneRect(_RestaurantZones.customerArea, size);
 
-        return ClipRRect(
+    return ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: Stack(
             fit: StackFit.expand,
@@ -132,11 +164,11 @@ class CartoonShopScene extends StatelessWidget {
                   _RestaurantZones.rugSlot,
                   size,
                   TopDownRug(
-                    width: size.width *
+                    width: ShopSceneLayout.designWidth *
                         _RestaurantZones.rugSlot.width *
                         0.9 *
                         RestaurantSceneScale.upgrade,
-                    height: size.width *
+                    height: ShopSceneLayout.designWidth *
                         _RestaurantZones.rugSlot.width *
                         0.55 *
                         RestaurantSceneScale.upgrade,
@@ -148,7 +180,9 @@ class CartoonShopScene extends StatelessWidget {
                 _RestaurantZones.plant,
                 size,
                 TopDownPlant(
-                  size: size.width * 0.075 * RestaurantSceneScale.plant,
+                  size: ShopSceneLayout.designWidth *
+                      0.075 *
+                      RestaurantSceneScale.plant,
                 ),
               ),
               _inZone(
@@ -257,8 +291,6 @@ class CartoonShopScene extends StatelessWidget {
             ],
           ),
         );
-      },
-    );
   }
 }
 

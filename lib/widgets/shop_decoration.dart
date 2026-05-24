@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../models/player_character.dart';
@@ -230,7 +232,40 @@ class _DpadButton extends StatelessWidget {
   }
 }
 
+/// Virtual design canvas and responsive scaling for ShopWorldPage (v0.1.11+).
+class ShopSceneLayout {
+  const ShopSceneLayout._();
+
+  static const designWidth = 900.0;
+  static const designHeight = 520.0;
+
+  /// Prevents the restaurant from stretching across ultra-wide web windows.
+  static const maxSceneWidth = 900.0;
+
+  static const minSceneScale = 0.55;
+  static const maxSceneScale = 1.0;
+
+  /// Keeps D-pad and action buttons from stretching on desktop web.
+  static const controlsMaxWidth = 480.0;
+
+  static Size get designSize => const Size(designWidth, designHeight);
+
+  static double scaleFor(double availableWidth, double availableHeight) {
+    final cappedWidth = math.min(availableWidth, maxSceneWidth);
+    final scaleByWidth = cappedWidth / designWidth;
+    final scaleByHeight = availableHeight / designHeight;
+    return math.min(scaleByWidth, scaleByHeight)
+        .clamp(minSceneScale, maxSceneScale);
+  }
+
+  static Size sceneSizeFor(double availableWidth, double availableHeight) {
+    final scale = scaleFor(availableWidth, availableHeight);
+    return Size(designWidth * scale, designHeight * scale);
+  }
+}
+
 /// Centralized scale constants for the shop world scene (v0.1.10+).
+/// Values are expressed in [ShopSceneLayout] design-space pixels.
 class RestaurantSceneScale {
   const RestaurantSceneScale._();
 
@@ -244,6 +279,9 @@ class RestaurantSceneScale {
 
   static const playerBearSize = 52.0;
   static const customerBearSize = 56.0;
+
+  /// Minimum readable label size after scene downscaling.
+  static const minLabelFontSize = 10.0;
 
   /// Movement bounds inset for larger character sprites.
   static const moveMinX = 0.08;

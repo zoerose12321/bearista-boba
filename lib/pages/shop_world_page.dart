@@ -145,55 +145,70 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
             child: Column(
               children: [
                 Expanded(
-                  child: CartoonShopScene(
-                    playerNormX: _playerNormX,
-                    playerNormY: _playerNormY,
-                    customerNormX: _customerNormX,
-                    customerNormY: _customerNormY,
-                    player: widget.player,
-                    customer: _currentCustomer,
-                    ownedFurnitureIds: widget.gameState.ownedFurnitureIds,
-                    playerNearCustomer: _isNearCustomer,
+                  child: ShopSceneViewport(
+                    child: CartoonShopScene(
+                      playerNormX: _playerNormX,
+                      playerNormY: _playerNormY,
+                      customerNormX: _customerNormX,
+                      customerNormY: _customerNormY,
+                      player: widget.player,
+                      customer: _currentCustomer,
+                      ownedFurnitureIds: widget.gameState.ownedFurnitureIds,
+                      playerNearCustomer: _isNearCustomer,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                ShopDpad(onMove: _move),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _isNearCustomer
-                          ? FilledButton.icon(
-                              onPressed: _openBearistaShop,
-                              icon: const Icon(Icons.chat_bubble_outline),
-                              label: const Text('Talk'),
-                            )
-                          : OutlinedButton.icon(
-                              onPressed: null,
-                              icon: const Icon(Icons.chat_bubble_outline),
-                              label: const Text('Talk'),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: ShopSceneLayout.controlsMaxWidth,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ShopDpad(onMove: _move),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _isNearCustomer
+                                  ? FilledButton.icon(
+                                      onPressed: _openBearistaShop,
+                                      icon: const Icon(Icons.chat_bubble_outline),
+                                      label: const Text('Talk'),
+                                    )
+                                  : OutlinedButton.icon(
+                                      onPressed: null,
+                                      icon: const Icon(Icons.chat_bubble_outline),
+                                      label: const Text('Talk'),
+                                    ),
                             ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _openShopUpgrades,
+                                icon: const Icon(Icons.storefront_outlined),
+                                label: const Text('Shop Upgrades'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (!_isNearCustomer) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Walk closer to ${_currentCustomer.name} to talk',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _openShopUpgrades,
-                        icon: const Icon(Icons.storefront_outlined),
-                        label: const Text('Shop Upgrades'),
-                      ),
-                    ),
-                  ],
-                ),
-                if (!_isNearCustomer) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Walk closer to ${_currentCustomer.name} to talk',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    textAlign: TextAlign.center,
                   ),
-                ],
+                ),
               ],
             ),
           ),
