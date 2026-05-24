@@ -300,6 +300,8 @@ class _CounterCluster extends StatelessWidget {
   final bool showVase;
 
   static const _itemScale = RestaurantSceneScale.counterTopItemScale;
+  static const _menuScale = RestaurantSceneScale.counterMenuScale;
+  static const _registerScale = RestaurantSceneScale.counterRegisterScale;
   static const _emojiSize = 20.0 * _itemScale;
   static const _vaseSize = 18.0 * _itemScale;
   static const _stationSize = 22.0 * _itemScale;
@@ -352,24 +354,24 @@ class _CounterCluster extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: w * 0.03,
-              top: h * 0.04,
+              left: w * 0.02,
+              top: h * 0.06,
               child: Transform.scale(
-                scale: _itemScale,
+                scale: _menuScale,
                 alignment: Alignment.topLeft,
                 child: _CounterMenuBoard(),
               ),
             ),
             Positioned(
-              left: w * 0.22,
-              top: h * 0.20,
+              left: w * 0.20,
+              top: h * 0.22,
               child: Text('🧋', style: TextStyle(fontSize: _emojiSize)),
             ),
             Positioned(
-              left: w * 0.36,
-              top: h * 0.44,
+              left: w * 0.38,
+              top: h * 0.50,
               child: Transform.scale(
-                scale: _itemScale,
+                scale: _registerScale,
                 alignment: Alignment.topLeft,
                 child: const TopDownRegister(),
               ),

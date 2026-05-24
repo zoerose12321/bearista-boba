@@ -294,6 +294,12 @@ class RestaurantSceneScale {
       counter * counterDetail * counterTopItemFactor;
   /// Detail scale for counter-top fonts/icons (v0.1.15).
   static const counterTopDetail = counterDetail * counterTopItemFactor;
+  /// Extra shrink for menu board and register only (v0.1.16).
+  static const counterMenuRegisterFactor = 0.62;
+  static const counterMenuScale =
+      counterTopItemScale * counterMenuRegisterFactor;
+  static const counterRegisterScale =
+      counterTopItemScale * counterMenuRegisterFactor;
   /// Additional enlargement for counter body/work surface only (v0.1.14).
   static const counterBodyBoost = 1.32;
   static const zoneFill = 0.96;
