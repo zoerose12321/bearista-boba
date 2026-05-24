@@ -82,7 +82,7 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
         _message = _customer.happyMessage;
         _selectedIngredients.clear();
       });
-      SoundEffectsService.instance.playCoinChaching();
+      SoundEffectsService.instance.playCoinDing();
     } else {
       setState(() {
         _message = _customer.hintMessage;
