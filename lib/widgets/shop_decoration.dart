@@ -230,6 +230,28 @@ class _DpadButton extends StatelessWidget {
   }
 }
 
+/// Centralized scale constants for the shop world scene (v0.1.10+).
+class RestaurantSceneScale {
+  const RestaurantSceneScale._();
+
+  static const furniture = 1.22;
+  static const stool = 1.15;
+  static const plant = 1.12;
+  static const counter = 1.18;
+  static const entry = 1.20;
+  static const upgrade = 1.25;
+  static const zoneFill = 0.92;
+
+  static const playerBearSize = 52.0;
+  static const customerBearSize = 56.0;
+
+  /// Movement bounds inset for larger character sprites.
+  static const moveMinX = 0.08;
+  static const moveMaxX = 0.90;
+  static const moveMinY = 0.08;
+  static const moveMaxY = 0.86;
+}
+
 /// Top-down restaurant props for the shop floor plan scene.
 class TopDownOvalTable extends StatelessWidget {
   const TopDownOvalTable({
@@ -319,12 +341,12 @@ class TopDownTableSet extends StatelessWidget {
   final Widget? extraStool;
   final int stoolCount;
 
-  static double groupWidth(double tableWidth) => tableWidth * 1.45;
-  static double groupHeight(double tableHeight) => tableHeight * 1.55;
+  static double groupWidth(double tableWidth) => tableWidth * 1.50;
+  static double groupHeight(double tableHeight) => tableHeight * 1.58;
 
   @override
   Widget build(BuildContext context) {
-    final stoolSize = tableWidth * 0.22;
+    final stoolSize = tableWidth * 0.24 * RestaurantSceneScale.stool;
 
     return SizedBox(
       width: groupWidth(tableWidth),
@@ -384,15 +406,15 @@ class RestaurantTableGroup extends StatelessWidget {
       tableChild: tableChild,
       extraStool: comfyChair
           ? Container(
-              width: tableWidth * 0.28,
-              height: tableWidth * 0.28,
+              width: tableWidth * 0.32,
+              height: tableWidth * 0.32,
               decoration: BoxDecoration(
                 color: const Color(0xFFE8A598),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(9),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
               ),
               alignment: Alignment.center,
-              child: Text('🪑', style: TextStyle(fontSize: tableWidth * 0.16)),
+              child: Text('🪑', style: TextStyle(fontSize: tableWidth * 0.18)),
             )
           : null,
     );
@@ -566,7 +588,7 @@ class TopDownRug extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.65), width: 2),
       ),
       alignment: Alignment.center,
-      child: const Text('🧶', style: TextStyle(fontSize: 22)),
+      child: Text('🧶', style: TextStyle(fontSize: 28 * RestaurantSceneScale.upgrade / 1.25)),
     );
   }
 }

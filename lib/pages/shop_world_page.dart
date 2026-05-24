@@ -32,10 +32,10 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
   static const _customerNormY = 0.38;
   static const _talkRangeInSteps = 6.0;
 
-  static const _minX = 0.06;
-  static const _maxX = 0.92;
-  static const _minY = 0.06;
-  static const _maxY = 0.88;
+  static const _minX = RestaurantSceneScale.moveMinX;
+  static const _maxX = RestaurantSceneScale.moveMaxX;
+  static const _minY = RestaurantSceneScale.moveMinY;
+  static const _maxY = RestaurantSceneScale.moveMaxY;
 
   /// Walk-path start — clear of entry door, open floor toward counter.
   double _playerNormX = 0.36;

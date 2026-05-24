@@ -83,8 +83,8 @@ class CartoonShopScene extends StatelessWidget {
     _Zone zone,
     Size size,
     Widget child, {
-    double widthFactor = 0.85,
-    double heightFactor = 0.85,
+    double widthFactor = RestaurantSceneScale.zoneFill,
+    double heightFactor = RestaurantSceneScale.zoneFill,
   }) {
     final rect = _zoneRect(zone, size);
     final w = rect.width * widthFactor;
@@ -103,9 +103,15 @@ class CartoonShopScene extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
-        final tableW = (size.width * _RestaurantZones.seatingA.width * 0.45)
-            .clamp(40.0, 56.0);
+        final tableW = (size.width *
+                _RestaurantZones.seatingA.width *
+                0.45 *
+                RestaurantSceneScale.furniture)
+            .clamp(48.0, 68.0);
         final tableH = tableW * 0.65;
+        final playerHalfW = RestaurantSceneScale.playerBearSize * 0.55;
+        final playerOffsetY = RestaurantSceneScale.playerBearSize * 1.55;
+        final customerHalfW = RestaurantSceneScale.customerBearSize * 0.95;
 
         final playerPos = _normToScene(playerNormX, playerNormY, size);
         final customerRect = _zoneRect(_RestaurantZones.customerArea, size);
@@ -126,16 +132,24 @@ class CartoonShopScene extends StatelessWidget {
                   _RestaurantZones.rugSlot,
                   size,
                   TopDownRug(
-                    width: size.width * _RestaurantZones.rugSlot.width * 0.9,
-                    height: size.width * _RestaurantZones.rugSlot.width * 0.55,
+                    width: size.width *
+                        _RestaurantZones.rugSlot.width *
+                        0.9 *
+                        RestaurantSceneScale.upgrade,
+                    height: size.width *
+                        _RestaurantZones.rugSlot.width *
+                        0.55 *
+                        RestaurantSceneScale.upgrade,
                   ),
-                  widthFactor: 0.95,
-                  heightFactor: 0.95,
+                  widthFactor: 0.98,
+                  heightFactor: 0.98,
                 ),
               _inZone(
                 _RestaurantZones.plant,
                 size,
-                TopDownPlant(size: size.width * 0.075),
+                TopDownPlant(
+                  size: size.width * 0.075 * RestaurantSceneScale.plant,
+                ),
               ),
               _inZone(
                 _RestaurantZones.seatingA,
@@ -163,7 +177,10 @@ class CartoonShopScene extends StatelessWidget {
                     tableWidth: tableW,
                     tableHeight: tableH,
                     tableColor: const Color(0xFFD4A574),
-                    tableChild: const Text('🪵', style: TextStyle(fontSize: 14)),
+                    tableChild: Text(
+                      '🪵',
+                      style: TextStyle(fontSize: 14 * RestaurantSceneScale.upgrade),
+                    ),
                   ),
                 ),
               _inZone(
@@ -171,29 +188,35 @@ class CartoonShopScene extends StatelessWidget {
                 size,
                 FittedBox(
                   fit: BoxFit.contain,
-                  child: TopDownDoor(width: 72),
+                  child: TopDownDoor(width: 72 * RestaurantSceneScale.entry),
                 ),
-                widthFactor: 0.85,
-                heightFactor: 0.9,
+                widthFactor: 0.92,
+                heightFactor: 0.92,
               ),
               _inZone(
                 _RestaurantZones.counter,
                 size,
                 _CounterCluster(
                   showVase: _owns('flower_vase'),
+                  scale: RestaurantSceneScale.counter,
                 ),
+                widthFactor: 0.96,
+                heightFactor: 0.96,
               ),
               if (_owns('boba_wall_sign'))
                 _inZone(
                   _RestaurantZones.signSlot,
                   size,
-                  const TopDownWallSign(),
-                  widthFactor: 0.9,
-                  heightFactor: 0.9,
+                  Transform.scale(
+                    scale: RestaurantSceneScale.upgrade,
+                    child: const TopDownWallSign(),
+                  ),
+                  widthFactor: 0.95,
+                  heightFactor: 0.95,
                 ),
               Positioned(
-                left: customerRect.left + (customerRect.width - 96) / 2,
-                top: customerRect.top + 4,
+                left: customerRect.left + (customerRect.width - customerHalfW * 2) / 2,
+                top: customerRect.top + 2,
                 child: ShopCharacter(
                   furColor: customer.furColor,
                   accentColor: customer.accentColor,
@@ -203,14 +226,14 @@ class CartoonShopScene extends StatelessWidget {
                   sizeScale: customer.sizeScale,
                   nameLabel: customer.name,
                   speechText: playerNearCustomer ? 'Ready to order?' : null,
-                  size: 44,
+                  size: RestaurantSceneScale.customerBearSize,
                 ),
               ),
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOut,
-                left: playerPos.dx - 42,
-                top: playerPos.dy - 68,
+                left: playerPos.dx - playerHalfW,
+                top: playerPos.dy - playerOffsetY,
                 child: Opacity(
                   opacity: _playerBehindCounter ? 0.88 : 1.0,
                   child: ShopCharacter(
@@ -218,7 +241,7 @@ class CartoonShopScene extends StatelessWidget {
                     accentColor: player.accentColor,
                     accessory: player.accessory,
                     isPanda: player.isPanda,
-                    size: 40,
+                    size: RestaurantSceneScale.playerBearSize,
                     isPlayer: true,
                   ),
                 ),
@@ -240,9 +263,13 @@ class CartoonShopScene extends StatelessWidget {
 }
 
 class _CounterCluster extends StatelessWidget {
-  const _CounterCluster({required this.showVase});
+  const _CounterCluster({
+    required this.showVase,
+    this.scale = 1.0,
+  });
 
   final bool showVase;
+  final double scale;
 
   @override
   Widget build(BuildContext context) {
@@ -250,29 +277,31 @@ class _CounterCluster extends StatelessWidget {
       builder: (context, constraints) {
         final w = constraints.maxWidth;
         final h = constraints.maxHeight;
+        final emojiSize = 18.0 * scale;
+        final vaseSize = 16.0 * scale;
 
         return Stack(
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              left: w * 0.08,
-              top: h * 0.08,
+              left: w * 0.06,
+              top: h * 0.06,
               right: 0,
-              child: TopDownCounter(width: w * 0.88, height: h * 0.42),
+              child: TopDownCounter(width: w * 0.90, height: h * 0.46),
             ),
             Positioned(
               right: 0,
               top: 0,
               child: Container(
-                width: w * 0.22,
-                height: h * 0.72,
+                width: w * 0.24,
+                height: h * 0.76,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [Color(0xFFE8C9A0), Color(0xFFD4A574)],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
                 ),
               ),
@@ -280,23 +309,31 @@ class _CounterCluster extends StatelessWidget {
             Positioned(
               left: 0,
               top: 0,
-              child: _CounterMenuBoard(),
+              child: Transform.scale(
+                scale: scale,
+                alignment: Alignment.topLeft,
+                child: _CounterMenuBoard(),
+              ),
             ),
             Positioned(
               right: w * 0.02,
-              top: h * 0.48,
-              child: const TopDownRegister(),
+              top: h * 0.46,
+              child: Transform.scale(
+                scale: scale,
+                alignment: Alignment.topRight,
+                child: const TopDownRegister(),
+              ),
             ),
             Positioned(
-              left: w * 0.42,
-              top: h * 0.22,
-              child: const Text('🧋', style: TextStyle(fontSize: 16)),
+              left: w * 0.40,
+              top: h * 0.20,
+              child: Text('🧋', style: TextStyle(fontSize: emojiSize)),
             ),
             if (showVase)
               Positioned(
-                left: w * 0.62,
-                top: h * 0.18,
-                child: const Text('🌸', style: TextStyle(fontSize: 14)),
+                left: w * 0.60,
+                top: h * 0.16,
+                child: Text('🌸', style: TextStyle(fontSize: vaseSize)),
               ),
           ],
         );
