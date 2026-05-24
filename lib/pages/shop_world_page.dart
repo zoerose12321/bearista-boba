@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/starter_customers.dart';
-import '../data/starter_furniture.dart';
 import '../models/bear_customer.dart';
 import '../models/bearista_character.dart';
 import '../models/shop_game_state.dart';
+import '../widgets/cartoon_shop_scene.dart';
+import '../widgets/shop_decoration.dart';
 import 'bearista_shop_page.dart';
 import 'shop_upgrades_page.dart';
 
@@ -25,12 +26,21 @@ class ShopWorldPage extends StatefulWidget {
 
 class _ShopWorldPageState extends State<ShopWorldPage> {
   static const _gridSize = 5;
+  static const _customerCol = 2;
+  static const _customerRow = 1;
+  static const _talkRange = 2;
 
   int _playerCol = 2;
-  int _playerRow = 4;
+  int _playerRow = 3;
 
   BearCustomer get _currentCustomer =>
       starterCustomers[widget.gameState.currentCustomerIndex];
+
+  bool get _isNearCustomer {
+    final distance =
+        (_playerCol - _customerCol).abs() + (_playerRow - _customerRow).abs();
+    return distance <= _talkRange;
+  }
 
   void _move(int deltaCol, int deltaRow) {
     setState(() {
@@ -94,10 +104,17 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Center(
-              child: Text(
-                '🪙 ${widget.gameState.coins}',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiary.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '🪙 ${widget.gameState.coins}',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -107,162 +124,66 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
       body: Focus(
         autofocus: true,
         onKeyEvent: _handleKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Stack(
-                  fit: StackFit.expand,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              children: [
+                Expanded(
+                  child: CartoonShopScene(
+                    gridSize: _gridSize,
+                    playerCol: _playerCol,
+                    playerRow: _playerRow,
+                    customerCol: _customerCol,
+                    customerRow: _customerRow,
+                    characterEmoji: widget.character.emoji,
+                    customer: _currentCustomer,
+                    ownedFurnitureIds: widget.gameState.ownedFurnitureIds,
+                    playerNearCustomer: _isNearCustomer,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ShopDpad(onMove: _move),
+                const SizedBox(height: 16),
+                Row(
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5E6D3),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                        ),
-                      ),
+                    Expanded(
+                      child: _isNearCustomer
+                          ? FilledButton.icon(
+                              onPressed: _openBearistaShop,
+                              icon: const Icon(Icons.chat_bubble_outline),
+                              label: const Text('Talk'),
+                            )
+                          : OutlinedButton.icon(
+                              onPressed: null,
+                              icon: const Icon(Icons.chat_bubble_outline),
+                              label: const Text('Talk'),
+                            ),
                     ),
-                    for (final item in starterFurniture)
-                      if (widget.gameState.ownedFurnitureIds.contains(item.id))
-                        Align(
-                          alignment: item.placement,
-                          child: Text(
-                            item.emoji,
-                            style: const TextStyle(fontSize: 36),
-                          ),
-                        ),
-                    Align(
-                      alignment: Alignment(0.0, -0.35),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _currentCustomer.emoji,
-                            style: const TextStyle(fontSize: 40),
-                          ),
-                          Text(
-                            _currentCustomer.name,
-                            style: theme.textTheme.labelLarge,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment(0.85, 0.55),
-                      child: const Text('🧋', style: TextStyle(fontSize: 32)),
-                    ),
-                    Center(
-                      child: AspectRatio(
-                        aspectRatio: 1,
-                        child: GridView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: _gridSize,
-                          ),
-                          itemCount: _gridSize * _gridSize,
-                          itemBuilder: (context, index) {
-                            final col = index % _gridSize;
-                            final row = index ~/ _gridSize;
-                            final isPlayer =
-                                col == _playerCol && row == _playerRow;
-
-                            return Container(
-                              margin: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                color: isPlayer
-                                    ? theme.colorScheme.primary
-                                        .withValues(alpha: 0.35)
-                                    : Colors.white.withValues(alpha: 0.35),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: isPlayer
-                                  ? Center(
-                                      child: Text(
-                                        widget.character.emoji,
-                                        style: const TextStyle(fontSize: 28),
-                                      ),
-                                    )
-                                  : null,
-                            );
-                          },
-                        ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _openShopUpgrades,
+                        icon: const Icon(Icons.storefront_outlined),
+                        label: const Text('Shop Upgrades'),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _MoveButton(icon: Icons.arrow_upward, onPressed: () => _move(0, -1)),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _MoveButton(icon: Icons.arrow_back, onPressed: () => _move(-1, 0)),
-                  const SizedBox(width: 12),
-                  _MoveButton(icon: Icons.arrow_downward, onPressed: () => _move(0, 1)),
-                  const SizedBox(width: 12),
-                  _MoveButton(icon: Icons.arrow_forward, onPressed: () => _move(1, 0)),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _openBearistaShop,
-                      icon: const Icon(Icons.chat_bubble_outline),
-                      label: const Text('Talk'),
+                if (!_isNearCustomer) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Walk closer to ${_currentCustomer.name} to talk',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _openShopUpgrades,
-                      icon: const Icon(Icons.storefront_outlined),
-                      label: const Text('Shop Upgrades'),
-                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _MoveButton extends StatelessWidget {
-  const _MoveButton({
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton.filled(
-      onPressed: onPressed,
-      icon: Icon(icon),
-      style: IconButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-        foregroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
