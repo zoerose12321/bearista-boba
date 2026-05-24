@@ -1,9 +1,11 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
-/// Loops cozy background music across the main game screens.
+/// Loops cozy background music when the player opts in via [MusicToggleButton].
 ///
-/// Uses [musicAssetPath] only — never the coin ding sound effect asset.
+/// Background music is **off by default** so opening Bearista Boba does not
+/// interrupt other apps' audio. Uses [musicAssetPath] only — never the coin
+/// ding sound effect asset.
 class MusicService extends ChangeNotifier {
   MusicService._() {
     _configurePlayer();
@@ -17,14 +19,30 @@ class MusicService extends ChangeNotifier {
   /// Soft default volume so music stays in the background.
   static const musicVolume = 0.22;
 
+  /// Mix with other apps instead of claiming exclusive audio focus when possible.
+  static final AudioContext _mixingContext = AudioContext(
+    android: AudioContextAndroid(
+      contentType: AndroidContentType.music,
+      usageType: AndroidUsageType.game,
+      audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+    ),
+    iOS: AudioContextIOS(
+      // Ambient does not interrupt other apps' audio on iOS.
+      category: AVAudioSessionCategory.ambient,
+    ),
+  );
+
   final AudioPlayer _player = AudioPlayer();
-  bool _enabled = true;
+
+  /// Player preference — false until the player turns music on.
+  bool _enabled = false;
   bool _started = false;
 
   bool get isMusicEnabled => _enabled;
 
   Future<void> _configurePlayer() async {
     try {
+      await _player.setAudioContext(_mixingContext);
       await _player.setPlayerMode(PlayerMode.mediaPlayer);
       await _player.setReleaseMode(ReleaseMode.loop);
       await _player.setVolume(musicVolume);
@@ -35,7 +53,7 @@ class MusicService extends ChangeNotifier {
     }
   }
 
-  /// Starts looping music after a user gesture. Safe to call multiple times.
+  /// Starts looping music after the player enables it. Safe to call multiple times.
   Future<void> startMusic() async {
     if (!_enabled) {
       return;
@@ -46,6 +64,7 @@ class MusicService extends ChangeNotifier {
         return;
       }
 
+      await _player.setAudioContext(_mixingContext);
       await _player.setVolume(musicVolume);
       await _player.setReleaseMode(ReleaseMode.loop);
 
@@ -68,6 +87,7 @@ class MusicService extends ChangeNotifier {
     }
   }
 
+  /// Safe when music has never started — pauses the idle player.
   Future<void> stopMusic() async {
     try {
       await _player.pause();

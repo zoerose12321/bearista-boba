@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../services/music_service.dart';
 import 'character_creator_page.dart';
 import '../widgets/music_toggle_button.dart';
 
@@ -52,7 +51,6 @@ class HomePage extends StatelessWidget {
                     const SizedBox(height: 48),
                     FilledButton(
                       onPressed: () {
-                        MusicService.instance.startMusic();
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (context) => const CharacterCreatorPage(),

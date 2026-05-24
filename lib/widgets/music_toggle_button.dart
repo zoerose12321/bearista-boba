@@ -16,7 +16,7 @@ class MusicToggleButton extends StatelessWidget {
         final enabled = music.isMusicEnabled;
         return IconButton(
           onPressed: () => music.toggleMusic(),
-          tooltip: enabled ? 'Music on' : 'Music off',
+          tooltip: enabled ? 'Turn music off' : 'Turn music on',
           icon: Icon(
             enabled ? Icons.music_note_rounded : Icons.music_off_rounded,
             color: enabled
