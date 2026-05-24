@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../data/starter_characters.dart';
 import '../models/bearista_character.dart';
-import 'shop_page.dart';
+import '../models/shop_game_state.dart';
+import 'shop_world_page.dart';
 
 class CharacterSelectPage extends StatelessWidget {
   const CharacterSelectPage({super.key});
@@ -24,7 +25,10 @@ class CharacterSelectPage extends StatelessWidget {
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (context) => ShopPage(character: character),
+                  builder: (context) => ShopWorldPage(
+                    character: character,
+                    gameState: ShopGameState(),
+                  ),
                 ),
               );
             },
