@@ -21,11 +21,11 @@ Future<void> _createCharacterAndEnterShop(
 }
 
 Future<void> _walkToCustomer(WidgetTester tester) async {
-  for (var i = 0; i < 7; i++) {
+  for (var i = 0; i < 5; i++) {
     await tester.tap(find.byIcon(Icons.keyboard_arrow_up_rounded));
     await tester.pump(const Duration(milliseconds: 180));
   }
-  for (var i = 0; i < 4; i++) {
+  for (var i = 0; i < 9; i++) {
     await tester.tap(find.byIcon(Icons.keyboard_arrow_right_rounded));
     await tester.pump(const Duration(milliseconds: 180));
   }
