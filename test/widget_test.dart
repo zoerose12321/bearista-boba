@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:bearista_boba/main.dart';
+import 'package:bearista_boba/services/coin_reward_service.dart';
 
 Future<void> _enterShop(
   WidgetTester tester, {
@@ -82,6 +83,10 @@ Future<void> _serveHoneyBearOrder(WidgetTester tester) async {
 }
 
 void main() {
+  tearDown(() {
+    CoinRewardService.rollRewardOverride = null;
+  });
+
   testWidgets('Home page shows title and start button', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
 
@@ -111,6 +116,8 @@ void main() {
   });
 
   testWidgets('Correct drink awards coins once per order', (WidgetTester tester) async {
+    CoinRewardService.rollRewardOverride = () => 12;
+
     await tester.pumpWidget(const BearistaBobaApp());
     await _openBearistaShopForHoney(tester);
 
@@ -118,15 +125,16 @@ void main() {
 
     await _serveHoneyBearOrder(tester);
 
-    expect(find.text('🪙 10'), findsOneWidget);
+    expect(find.text('🪙 12'), findsOneWidget);
     expect(find.textContaining('Perfect! Honey Bear loves it!'), findsOneWidget);
+    expect(find.textContaining('+12 coins'), findsOneWidget);
     expect(find.text('Back to Shop'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Serve Drink'));
     await tester.tap(find.text('Serve Drink'));
     await tester.pump();
 
-    expect(find.text('🪙 10'), findsOneWidget);
+    expect(find.text('🪙 12'), findsOneWidget);
   });
 
   testWidgets('Talk opens selected customer order', (WidgetTester tester) async {
@@ -159,6 +167,12 @@ void main() {
   });
 
   testWidgets('Furniture can be bought with enough coins', (WidgetTester tester) async {
+    var rewardCall = 0;
+    CoinRewardService.rollRewardOverride = () {
+      rewardCall++;
+      return 12;
+    };
+
     await tester.pumpWidget(const BearistaBobaApp());
     await _openBearistaShopForHoney(tester);
 
@@ -180,7 +194,7 @@ void main() {
     await tester.tap(find.text('Serve Drink'));
     await tester.pump();
 
-    expect(find.text('🪙 20'), findsOneWidget);
+    expect(find.text('🪙 24'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
@@ -191,7 +205,7 @@ void main() {
     await tester.tap(find.text('Buy').first);
     await tester.pump();
 
-    expect(find.text('🪙 0 coins'), findsOneWidget);
+    expect(find.text('🪙 4 coins'), findsOneWidget);
     expect(find.textContaining('Cozy Table is now in your shop!'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Back'));

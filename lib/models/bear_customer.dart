@@ -31,4 +31,8 @@ class BearCustomer {
   final BearAccessory accessory;
   final bool isPanda;
   final double sizeScale;
+
+  String happyMessageWithReward(int coinReward) {
+    return '$happyMessage +$coinReward coins';
+  }
 }

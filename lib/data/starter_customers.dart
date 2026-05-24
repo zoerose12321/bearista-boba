@@ -12,7 +12,7 @@ const starterCustomers = [
     order: DrinkOrder(
       ingredients: ['Black Tea', 'Milk', 'Tapioca Pearls'],
     ),
-    happyMessage: 'Perfect! Honey Bear loves it! 🍯✨ +10 coins',
+    happyMessage: 'Perfect! Honey Bear loves it! 🍯✨',
     hintMessage: 'Honey Bear was hoping for black tea, milk, and tapioca pearls.',
     furColor: Color(0xFFE8B86D),
     accentColor: Color(0xFFE8A598),
@@ -25,7 +25,7 @@ const starterCustomers = [
     order: DrinkOrder(
       ingredients: ['Green Tea', 'Milk', 'Boba Jelly'],
     ),
-    happyMessage: 'Panda Bear is so happy! 🐼🍵 +10 coins',
+    happyMessage: 'Panda Bear is so happy! 🐼🍵',
     hintMessage: 'Panda Bear wanted green tea, milk, and boba jelly.',
     furColor: Color(0xFFF7F7F7),
     accentColor: Color(0xFFB8D4A8),
@@ -39,7 +39,7 @@ const starterCustomers = [
     order: DrinkOrder(
       ingredients: ['Strawberry Tea', 'Milk', 'Tapioca Pearls'],
     ),
-    happyMessage: 'Baby Bear does a happy wiggle! 🧸🍓 +10 coins',
+    happyMessage: 'Baby Bear does a happy wiggle! 🧸🍓',
     hintMessage: 'Baby Bear wanted strawberry tea, milk, and tapioca pearls.',
     furColor: Color(0xFFD4A574),
     accentColor: Color(0xFFF5A8C8),
@@ -54,7 +54,7 @@ const starterCustomers = [
     order: DrinkOrder(
       ingredients: ['Green Tea', 'Oat Milk', 'Boba Jelly'],
     ),
-    happyMessage: 'Polar Bear gives an icy thumbs up! 🐻‍❄️❄️ +10 coins',
+    happyMessage: 'Polar Bear gives an icy thumbs up! 🐻‍❄️❄️',
     hintMessage: 'Polar Bear wanted green tea, oat milk, and boba jelly.',
     furColor: Color(0xFFF5F8FF),
     accentColor: Color(0xFFA8D4F0),
@@ -68,7 +68,7 @@ const starterCustomers = [
     order: DrinkOrder(
       ingredients: ['Black Tea', 'Oat Milk', 'Tapioca Pearls'],
     ),
-    happyMessage: 'Sleepy Bear smiles softly. 🌙🐻 +10 coins',
+    happyMessage: 'Sleepy Bear smiles softly. 🌙🐻',
     hintMessage: 'Sleepy Bear wanted black tea, oat milk, and tapioca pearls.',
     furColor: Color(0xFFC9C0D8),
     accentColor: Color(0xFFC9B8E8),

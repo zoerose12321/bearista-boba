@@ -229,6 +229,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
         _nextReplacementIndex % starterCustomers.length;
     _nextReplacementIndex++;
     visit.orderCompleted = false;
+    visit.coinReward = null;
     _scheduleVisitStart(slotIndex);
   }
 
@@ -309,8 +310,10 @@ class _ShopWorldPageState extends State<ShopWorldPage>
           gameState: widget.gameState,
           customer: visit.customer,
           orderCompleted: visit.orderCompleted,
-          onOrderCompleted: () {
+          coinReward: visit.coinReward,
+          onOrderCompleted: (reward) {
             visit.orderCompleted = true;
+            visit.coinReward = reward;
           },
         ),
       ),

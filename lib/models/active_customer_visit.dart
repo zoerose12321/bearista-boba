@@ -10,6 +10,7 @@ class ActiveCustomerVisit {
     required this.seat,
     this.phase = CustomerVisitPhase.waitingToEnter,
     this.orderCompleted = false,
+    this.coinReward,
   });
 
   /// Fixed seat slot (0–2) — seat assignment does not change on replacement.
@@ -21,6 +22,7 @@ class ActiveCustomerVisit {
   final CustomerSeatingSpot seat;
   CustomerVisitPhase phase;
   bool orderCompleted;
+  int? coinReward;
 
   BearCustomer get customer => starterCustomers[customerIndex];
 

@@ -4,6 +4,7 @@ import '../models/bear_customer.dart';
 import '../models/player_character.dart';
 import '../models/drink_order.dart';
 import '../models/shop_game_state.dart';
+import '../services/coin_reward_service.dart';
 import '../services/sound_effects_service.dart';
 import '../widgets/cute_bear_avatar.dart';
 
@@ -14,6 +15,7 @@ class BearistaShopPage extends StatefulWidget {
     required this.gameState,
     required this.customer,
     this.orderCompleted = false,
+    this.coinReward,
     this.onOrderCompleted,
   });
 
@@ -21,7 +23,8 @@ class BearistaShopPage extends StatefulWidget {
   final ShopGameState gameState;
   final BearCustomer customer;
   final bool orderCompleted;
-  final VoidCallback? onOrderCompleted;
+  final int? coinReward;
+  final void Function(int coinReward)? onOrderCompleted;
 
   @override
   State<BearistaShopPage> createState() => _BearistaShopPageState();
@@ -41,6 +44,7 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
   final List<String> _selectedIngredients = [];
   String? _message;
   late bool _orderCompleted;
+  int? _coinReward;
 
   BearCustomer get _customer => widget.customer;
 
@@ -51,6 +55,10 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
   void initState() {
     super.initState();
     _orderCompleted = widget.orderCompleted;
+    _coinReward = widget.coinReward;
+    if (_orderCompleted && _coinReward != null) {
+      _message = _customer.happyMessageWithReward(_coinReward!);
+    }
   }
 
   void _toggleIngredient(String ingredient) {
@@ -88,13 +96,15 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
     }
 
     if (_selectedDrink.matches(_customer.order)) {
+      final reward = CoinRewardService.rollReward();
       setState(() {
-        widget.gameState.coins += 10;
+        widget.gameState.coins += reward;
         _orderCompleted = true;
-        _message = _customer.happyMessage;
+        _coinReward = reward;
+        _message = _customer.happyMessageWithReward(reward);
         _selectedIngredients.clear();
       });
-      widget.onOrderCompleted?.call();
+      widget.onOrderCompleted?.call(reward);
       SoundEffectsService.instance.playCoinDing();
     } else {
       setState(() {
