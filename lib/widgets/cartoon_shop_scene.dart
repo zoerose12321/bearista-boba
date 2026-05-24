@@ -4,6 +4,24 @@ import '../models/bear_customer.dart';
 import '../models/player_character.dart';
 import 'shop_decoration.dart';
 
+/// Normalized layout anchors (0–1 within the walkable floor).
+class _SceneLayout {
+  static const plantNorm = Offset(0.10, 0.12);
+  static const table1Norm = Offset(0.20, 0.28);
+  static const table2Norm = Offset(0.26, 0.50);
+  static const table3Norm = Offset(0.34, 0.66);
+  static const cozyTableNorm = Offset(0.14, 0.42);
+  static const comfyChairNorm = Offset(0.40, 0.48);
+  static const rugNorm = Offset(0.30, 0.56);
+
+  static const counterRightFrac = 0.05;
+  static const counterTopFrac = 0.07;
+  static const counterWidthFrac = 0.36;
+  static const counterHeightFrac = 0.13;
+  static const counterLegWidthFrac = 0.09;
+  static const counterLegHeightFrac = 0.20;
+}
+
 class CartoonShopScene extends StatelessWidget {
   const CartoonShopScene({
     super.key,
@@ -28,9 +46,8 @@ class CartoonShopScene extends StatelessWidget {
 
   bool _owns(String id) => ownedFurnitureIds.contains(id);
 
-  /// Player is in the work area behind the right-side counter.
   bool get _playerBehindCounter =>
-      playerNormX >= 0.58 && playerNormY <= 0.28;
+      playerNormX >= 0.62 && playerNormY <= 0.22;
 
   Offset _normToScene(double normX, double normY, Size size) {
     const floorLeft = 0.06;
@@ -43,58 +60,99 @@ class CartoonShopScene extends StatelessWidget {
     return Offset(x, y);
   }
 
+  Offset _anchorTopLeft(
+    Offset norm,
+    Size sceneSize, {
+    required double width,
+    required double height,
+  }) {
+    final center = _normToScene(norm.dx, norm.dy, sceneSize);
+    return Offset(center.dx - width / 2, center.dy - height / 2);
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
-        final playerPosition = _normToScene(playerNormX, playerNormY, size);
-        final customerPosition = _normToScene(customerNormX, customerNormY, size);
-        final tableW = size.width * 0.15;
-        final tableH = size.width * 0.10;
+        final tableW = size.width * 0.13;
+        final tableH = size.width * 0.085;
 
-        final counterRight = size.width * 0.04;
-        final counterTop = size.height * 0.06;
-        final counterWidth = size.width * 0.44;
-        final counterHeight = size.height * 0.14;
-        final counterLegWidth = size.width * 0.11;
-        final counterLegHeight = size.height * 0.24;
+        final counterRight = size.width * _SceneLayout.counterRightFrac;
+        final counterTop = size.height * _SceneLayout.counterTopFrac;
+        final counterWidth = size.width * _SceneLayout.counterWidthFrac;
+        final counterHeight = size.height * _SceneLayout.counterHeightFrac;
+        final counterLegWidth = size.width * _SceneLayout.counterLegWidthFrac;
+        final counterLegHeight = size.height * _SceneLayout.counterLegHeightFrac;
 
-        final playerWidget = ShopCharacter(
-          furColor: player.furColor,
-          accentColor: player.accentColor,
-          accessory: player.accessory,
-          isPanda: player.isPanda,
-          size: 44,
-          isPlayer: true,
-        );
-
-        final customerWidget = ShopCharacter(
-          furColor: customer.furColor,
-          accentColor: customer.accentColor,
-          muzzleColor: customer.muzzleColor,
-          accessory: customer.accessory,
-          isPanda: customer.isPanda,
-          sizeScale: customer.sizeScale,
-          nameLabel: customer.name,
-          speechText: playerNearCustomer ? 'Ready to order?' : null,
-          size: 48,
+        final playerPos = _normToScene(playerNormX, playerNormY, size);
+        final customerAnchor = _anchorTopLeft(
+          Offset(customerNormX, customerNormY),
+          size,
+          width: 96,
+          height: 120,
         );
 
         return ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: Stack(
             fit: StackFit.expand,
+            clipBehavior: Clip.none,
             children: [
               const _RestaurantRoom(),
               if (_owns('pastel_rug'))
-                Align(
-                  alignment: const Alignment(-0.15, 0.18),
+                Positioned(
+                  left: _anchorTopLeft(
+                    _SceneLayout.rugNorm,
+                    size,
+                    width: size.width * 0.26,
+                    height: size.width * 0.17,
+                  ).dx,
+                  top: _anchorTopLeft(
+                    _SceneLayout.rugNorm,
+                    size,
+                    width: size.width * 0.26,
+                    height: size.width * 0.17,
+                  ).dy,
                   child: TopDownRug(
-                    width: size.width * 0.30,
-                    height: size.width * 0.20,
+                    width: size.width * 0.26,
+                    height: size.width * 0.17,
                   ),
                 ),
+              _buildTableAt(_SceneLayout.table1Norm, size, tableW, tableH),
+              _buildTableAt(_SceneLayout.table2Norm, size, tableW * 0.95, tableH * 0.95,
+                  stoolColor: const Color(0xFFF5D6A8)),
+              _buildTableAt(
+                _SceneLayout.table3Norm,
+                size,
+                tableW * 0.9,
+                tableH * 0.9,
+                tableColor: const Color(0xFFD4A574),
+                tableChild: const Text('☕', style: TextStyle(fontSize: 14)),
+              ),
+              if (_owns('cozy_table'))
+                _buildTableAt(
+                  _SceneLayout.cozyTableNorm,
+                  size,
+                  tableW,
+                  tableH,
+                  tableColor: const Color(0xFFD4A574),
+                  tableChild: const Text('🪵', style: TextStyle(fontSize: 16)),
+                ),
+              Positioned(
+                left: _anchorTopLeft(_SceneLayout.plantNorm, size,
+                        width: size.width * 0.09, height: size.width * 0.09)
+                    .dx,
+                top: _anchorTopLeft(_SceneLayout.plantNorm, size,
+                        width: size.width * 0.09, height: size.width * 0.09)
+                    .dy,
+                child: TopDownPlant(size: size.width * 0.09),
+              ),
+              Positioned(
+                left: size.width * 0.04,
+                bottom: size.height * 0.05,
+                child: TopDownDoor(width: size.width * 0.14),
+              ),
               Positioned(
                 right: counterRight,
                 top: counterTop,
@@ -115,136 +173,139 @@ class CartoonShopScene extends StatelessWidget {
                       end: Alignment.bottomCenter,
                       colors: [Color(0xFFE8C9A0), Color(0xFFD4A574)],
                     ),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
                   ),
                 ),
               ),
-              Positioned(
-                left: size.width * 0.14,
-                top: size.height * 0.36,
-                child: TopDownTableSet(
-                  tableWidth: tableW,
-                  tableHeight: tableH,
-                  tableColor: const Color(0xFFE0C9A8),
-                ),
-              ),
-              Positioned(
-                left: size.width * 0.34,
-                top: size.height * 0.50,
-                child: TopDownTableSet(
-                  tableWidth: tableW * 0.95,
-                  tableHeight: tableH * 0.95,
-                  tableColor: const Color(0xFFE0C9A8),
-                  stoolColor: const Color(0xFFF5D6A8),
-                ),
-              ),
-              Positioned(
-                left: size.width * 0.22,
-                bottom: size.height * 0.30,
-                child: TopDownTableSet(
-                  tableWidth: tableW * 0.9,
-                  tableHeight: tableH * 0.9,
-                  tableColor: const Color(0xFFD4A574),
-                  tableChild: const Text('☕', style: TextStyle(fontSize: 16)),
-                ),
-              ),
-              if (_owns('cozy_table'))
+              if (_owns('boba_wall_sign'))
                 Positioned(
-                  left: size.width * 0.08,
-                  top: size.height * 0.52,
-                  child: TopDownTableSet(
-                    tableWidth: tableW * 1.05,
-                    tableHeight: tableH * 1.05,
-                    tableColor: const Color(0xFFD4A574),
-                    tableChild: const Text('🪵', style: TextStyle(fontSize: 18)),
-                  ),
+                  top: size.height * 0.02,
+                  right: size.width * 0.08,
+                  child: const TopDownWallSign(),
+                ),
+              Positioned(
+                right: counterRight + counterLegWidth + 6,
+                top: counterTop - size.height * 0.02,
+                child: _CounterMenuBoard(),
+              ),
+              Positioned(
+                right: counterRight + counterLegWidth * 0.2,
+                top: counterTop + counterHeight + 10,
+                child: const TopDownRegister(),
+              ),
+              Positioned(
+                right: counterRight + counterWidth * 0.38,
+                top: counterTop + counterHeight * 0.28,
+                child: const Text('🧋', style: TextStyle(fontSize: 18)),
+              ),
+              if (_owns('flower_vase'))
+                Positioned(
+                  right: counterRight + counterWidth * 0.62,
+                  top: counterTop + counterHeight * 0.22,
+                  child: const Text('🌸', style: TextStyle(fontSize: 18)),
                 ),
               if (_owns('comfy_chair'))
                 Positioned(
-                  left: size.width * 0.42,
-                  top: size.height * 0.44,
+                  left: _anchorTopLeft(
+                    _SceneLayout.comfyChairNorm,
+                    size,
+                    width: 36,
+                    height: 52,
+                  ).dx,
+                  top: _anchorTopLeft(
+                    _SceneLayout.comfyChairNorm,
+                    size,
+                    width: 36,
+                    height: 52,
+                  ).dy,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 28,
-                        height: 28,
+                        width: 26,
+                        height: 26,
                         decoration: BoxDecoration(
                           color: const Color(0xFFE8A598),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(9),
                           border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
                         ),
                         alignment: Alignment.center,
-                        child: const Text('🪑', style: TextStyle(fontSize: 14)),
+                        child: const Text('🪑', style: TextStyle(fontSize: 13)),
                       ),
                       const SizedBox(height: 2),
-                      const TopDownStool(size: 18, color: Color(0xFFE8A598)),
+                      const TopDownStool(size: 16, color: Color(0xFFE8A598)),
                     ],
                   ),
                 ),
               Positioned(
-                left: size.width * 0.06,
-                top: size.height * 0.10,
-                child: TopDownPlant(size: size.width * 0.10),
-              ),
-              Positioned(
-                left: size.width * 0.04,
-                bottom: size.height * 0.04,
-                child: TopDownDoor(width: size.width * 0.16),
-              ),
-              Positioned(
-                left: customerPosition.dx - 48,
-                top: customerPosition.dy - 88,
-                child: customerWidget,
+                left: customerAnchor.dx,
+                top: customerAnchor.dy,
+                child: ShopCharacter(
+                  furColor: customer.furColor,
+                  accentColor: customer.accentColor,
+                  muzzleColor: customer.muzzleColor,
+                  accessory: customer.accessory,
+                  isPanda: customer.isPanda,
+                  sizeScale: customer.sizeScale,
+                  nameLabel: customer.name,
+                  speechText: playerNearCustomer ? 'Ready to order?' : null,
+                  size: 46,
+                ),
               ),
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOut,
-                left: playerPosition.dx - 44,
-                top: playerPosition.dy - 72,
+                left: playerPos.dx - 44,
+                top: playerPos.dy - 72,
                 child: Opacity(
                   opacity: _playerBehindCounter ? 0.88 : 1.0,
-                  child: playerWidget,
+                  child: ShopCharacter(
+                    furColor: player.furColor,
+                    accentColor: player.accentColor,
+                    accessory: player.accessory,
+                    isPanda: player.isPanda,
+                    size: 42,
+                    isPlayer: true,
+                  ),
                 ),
               ),
               if (_playerBehindCounter)
                 Positioned(
-                  right: counterRight + counterLegWidth + counterWidth * 0.55,
+                  right: counterRight + counterLegWidth + counterWidth * 0.52,
                   top: counterTop,
-                  child: _CounterSideLip(height: counterHeight + counterLegHeight * 0.45),
-                ),
-              if (_owns('boba_wall_sign'))
-                Positioned(
-                  top: size.height * 0.015,
-                  right: size.width * 0.10,
-                  child: const TopDownWallSign(),
-                ),
-              Positioned(
-                right: counterRight + counterLegWidth * 0.15,
-                top: counterTop + counterHeight * 0.2,
-                child: const TopDownRegister(),
-              ),
-              Positioned(
-                right: counterRight + counterWidth * 0.72,
-                top: counterTop - size.height * 0.01,
-                child: _CounterMenuBoard(),
-              ),
-              Positioned(
-                right: counterRight + counterWidth * 0.42,
-                top: counterTop + counterHeight * 0.22,
-                child: const Text('🧋', style: TextStyle(fontSize: 20)),
-              ),
-              if (_owns('flower_vase'))
-                Positioned(
-                  right: counterRight + counterWidth * 0.18,
-                  top: counterTop + counterHeight * 0.15,
-                  child: const Text('🌸', style: TextStyle(fontSize: 20)),
+                  child: _CounterSideLip(height: counterHeight + counterLegHeight * 0.4),
                 ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildTableAt(
+    Offset norm,
+    Size sceneSize,
+    double tableW,
+    double tableH, {
+    Color tableColor = const Color(0xFFE0C9A8),
+    Color stoolColor = const Color(0xFFE8A598),
+    Widget? tableChild,
+  }) {
+    final tableSetW = tableW * 1.6;
+    final tableSetH = tableH * 1.8;
+    final pos = _anchorTopLeft(norm, sceneSize, width: tableSetW, height: tableSetH);
+
+    return Positioned(
+      left: pos.dx,
+      top: pos.dy,
+      child: TopDownTableSet(
+        tableWidth: tableW,
+        tableHeight: tableH,
+        tableColor: tableColor,
+        stoolColor: stoolColor,
+        tableChild: tableChild,
+      ),
     );
   }
 }
@@ -257,7 +318,7 @@ class _CounterSideLip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 12,
+      width: 10,
       height: height,
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -268,7 +329,7 @@ class _CounterSideLip extends StatelessWidget {
             const Color(0xFFB8845A).withValues(alpha: 0.9),
           ],
         ),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(5),
         boxShadow: [
           BoxShadow(
             color: Colors.brown.withValues(alpha: 0.15),
@@ -285,19 +346,19 @@ class _CounterMenuBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 56,
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+      width: 50,
+      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
       decoration: BoxDecoration(
         color: const Color(0xFF5C4A42),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(9),
         border: Border.all(color: const Color(0xFFD4A574), width: 2),
       ),
       child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('MENU', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+          Text('MENU', style: TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)),
           SizedBox(height: 2),
-          Text('🍵', style: TextStyle(fontSize: 12)),
+          Text('🍵', style: TextStyle(fontSize: 11)),
         ],
       ),
     );
@@ -312,8 +373,8 @@ class _RestaurantRoom extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: RadialGradient(
-          center: const Alignment(0.25, 0.35),
-          radius: 1.2,
+          center: const Alignment(0.2, 0.4),
+          radius: 1.15,
           colors: [
             const Color(0xFFFFF8F0),
             const Color(0xFFF5E6D3),
@@ -348,11 +409,11 @@ class _FloorTilePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.08)
+      ..color = Colors.white.withValues(alpha: 0.07)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
-    const spacing = 36.0;
+    const spacing = 40.0;
     for (var x = spacing; x < size.width; x += spacing) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
