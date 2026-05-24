@@ -25,19 +25,20 @@ class ShopWorldPage extends StatefulWidget {
 }
 
 class _ShopWorldPageState extends State<ShopWorldPage> {
-  static const _gridSize = 5;
-  static const _customerCol = 2;
-  static const _customerRow = 1;
-
   static const _horizontalStep = 0.05;
   static const _verticalStep = 0.09;
 
-  static const _customerNormX = 0.5;
-  static const _customerNormY = 0.25;
+  static const _customerNormX = 0.58;
+  static const _customerNormY = 0.30;
   static const _talkRangeInSteps = 6.0;
 
-  double _playerNormX = 0.5;
-  double _playerNormY = 0.75;
+  static const _minX = 0.08;
+  static const _maxX = 0.92;
+  static const _minY = 0.14;
+  static const _maxY = 0.88;
+
+  double _playerNormX = 0.55;
+  double _playerNormY = 0.70;
 
   BearCustomer get _currentCustomer =>
       starterCustomers[widget.gameState.currentCustomerIndex];
@@ -52,12 +53,12 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
   void _move(int deltaCol, int deltaRow) {
     setState(() {
       if (deltaCol != 0) {
-        _playerNormX =
-            (_playerNormX + deltaCol * _horizontalStep).clamp(0.0, 1.0);
+        _playerNormX = (_playerNormX + deltaCol * _horizontalStep)
+            .clamp(_minX, _maxX);
       }
       if (deltaRow != 0) {
-        _playerNormY =
-            (_playerNormY + deltaRow * _verticalStep).clamp(0.0, 1.0);
+        _playerNormY = (_playerNormY + deltaRow * _verticalStep)
+            .clamp(_minY, _maxY);
       }
     });
   }
@@ -144,11 +145,10 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
               children: [
                 Expanded(
                   child: CartoonShopScene(
-                    gridSize: _gridSize,
                     playerNormX: _playerNormX,
                     playerNormY: _playerNormY,
-                    customerCol: _customerCol,
-                    customerRow: _customerRow,
+                    customerNormX: _customerNormX,
+                    customerNormY: _customerNormY,
                     player: widget.player,
                     customer: _currentCustomer,
                     ownedFurnitureIds: widget.gameState.ownedFurnitureIds,

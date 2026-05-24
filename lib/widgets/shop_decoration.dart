@@ -229,3 +229,329 @@ class _DpadButton extends StatelessWidget {
     );
   }
 }
+
+/// Top-down restaurant props for the shop floor plan scene.
+class TopDownOvalTable extends StatelessWidget {
+  const TopDownOvalTable({
+    super.key,
+    required this.width,
+    required this.height,
+    this.color = const Color(0xFFD4A574),
+    this.child,
+  });
+
+  final double width;
+  final double height;
+  final Color color;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(height),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown.withValues(alpha: 0.12),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: Colors.white.withValues(alpha: 0.55), width: 2),
+      ),
+      alignment: Alignment.center,
+      child: child,
+    );
+  }
+}
+
+class TopDownStool extends StatelessWidget {
+  const TopDownStool({
+    super.key,
+    this.size = 16,
+    this.color = const Color(0xFFE8A598),
+  });
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.7), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown.withValues(alpha: 0.1),
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TopDownTableSet extends StatelessWidget {
+  const TopDownTableSet({
+    super.key,
+    required this.tableWidth,
+    required this.tableHeight,
+    this.tableColor = const Color(0xFFD4A574),
+    this.stoolColor = const Color(0xFFE8A598),
+    this.tableChild,
+    this.extraStool,
+  });
+
+  final double tableWidth;
+  final double tableHeight;
+  final Color tableColor;
+  final Color stoolColor;
+  final Widget? tableChild;
+  final Widget? extraStool;
+
+  @override
+  Widget build(BuildContext context) {
+    final stoolSize = tableWidth * 0.28;
+
+    return SizedBox(
+      width: tableWidth * 1.6,
+      height: tableHeight * 1.8,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(top: 0, child: TopDownStool(size: stoolSize, color: stoolColor)),
+          Positioned(
+            bottom: 0,
+            child: extraStool ?? TopDownStool(size: stoolSize, color: stoolColor),
+          ),
+          Positioned(left: 0, child: TopDownStool(size: stoolSize * 0.9, color: stoolColor)),
+          Positioned(right: 0, child: TopDownStool(size: stoolSize * 0.9, color: stoolColor)),
+          TopDownOvalTable(
+            width: tableWidth,
+            height: tableHeight,
+            color: tableColor,
+            child: tableChild,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TopDownCounter extends StatelessWidget {
+  const TopDownCounter({super.key, required this.width, required this.height});
+
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE8C9A0), Color(0xFFD4A574)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown.withValues(alpha: 0.14),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: 16,
+            top: height * 0.25,
+            child: const Text('🧋', style: TextStyle(fontSize: 20)),
+          ),
+          Positioned(
+            right: 16,
+            top: height * 0.25,
+            child: const Text('☕', style: TextStyle(fontSize: 18)),
+          ),
+          Center(
+            child: Container(
+              width: width * 0.5,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TopDownRegister extends StatelessWidget {
+  const TopDownRegister({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 36,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8A598),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: const Text('💳', style: TextStyle(fontSize: 16)),
+    );
+  }
+}
+
+class TopDownDoor extends StatelessWidget {
+  const TopDownDoor({super.key, required this.width});
+
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: width,
+          height: width * 0.55,
+          decoration: BoxDecoration(
+            color: const Color(0xFFC4956A),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF8B6914).withValues(alpha: 0.35)),
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.door_front_door_outlined,
+            color: Colors.white.withValues(alpha: 0.85),
+            size: width * 0.35,
+          ),
+        ),
+        Text(
+          'Entry',
+          style: TextStyle(
+            fontSize: width * 0.12,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF5C4A42).withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class TopDownPlant extends StatelessWidget {
+  const TopDownPlant({super.key, this.size = 40});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFFB8D4A8),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.75), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: Text('🪴', style: TextStyle(fontSize: size * 0.55)),
+    );
+  }
+}
+
+class TopDownRug extends StatelessWidget {
+  const TopDownRug({super.key, required this.width, required this.height});
+
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFF5C6D6).withValues(alpha: 0.75),
+            const Color(0xFFC6D9F5).withValues(alpha: 0.75),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(height * 0.4),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.65), width: 2),
+      ),
+      alignment: Alignment.center,
+      child: const Text('🧶', style: TextStyle(fontSize: 22)),
+    );
+  }
+}
+
+class TopDownWallSign extends StatelessWidget {
+  const TopDownWallSign({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8A598),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.7), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('🧋', style: TextStyle(fontSize: 18)),
+          SizedBox(width: 4),
+          Text(
+            'Bearista',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF5C4A42),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
