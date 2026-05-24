@@ -28,24 +28,38 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
   static const _gridSize = 5;
   static const _customerCol = 2;
   static const _customerRow = 1;
-  static const _talkRange = 2;
 
-  int _playerCol = 2;
-  int _playerRow = 3;
+  /// Smaller steps keep sideways movement controlled inside the floor area.
+  static const _horizontalStep = 0.05;
+  static const _verticalStep = 0.09;
+
+  static const _customerNormX = 0.5;
+  static const _customerNormY = 0.25;
+  static const _talkRangeInSteps = 6.0;
+
+  double _playerNormX = 0.5;
+  double _playerNormY = 0.75;
 
   BearCustomer get _currentCustomer =>
       starterCustomers[widget.gameState.currentCustomerIndex];
 
   bool get _isNearCustomer {
-    final distance =
-        (_playerCol - _customerCol).abs() + (_playerRow - _customerRow).abs();
-    return distance <= _talkRange;
+    final dx = (_playerNormX - _customerNormX).abs();
+    final dy = (_playerNormY - _customerNormY).abs();
+    final distanceInSteps = dx / _horizontalStep + dy / _verticalStep;
+    return distanceInSteps <= _talkRangeInSteps;
   }
 
   void _move(int deltaCol, int deltaRow) {
     setState(() {
-      _playerCol = (_playerCol + deltaCol).clamp(0, _gridSize - 1);
-      _playerRow = (_playerRow + deltaRow).clamp(0, _gridSize - 1);
+      if (deltaCol != 0) {
+        _playerNormX =
+            (_playerNormX + deltaCol * _horizontalStep).clamp(0.0, 1.0);
+      }
+      if (deltaRow != 0) {
+        _playerNormY =
+            (_playerNormY + deltaRow * _verticalStep).clamp(0.0, 1.0);
+      }
     });
   }
 
@@ -132,8 +146,8 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
                 Expanded(
                   child: CartoonShopScene(
                     gridSize: _gridSize,
-                    playerCol: _playerCol,
-                    playerRow: _playerRow,
+                    playerNormX: _playerNormX,
+                    playerNormY: _playerNormY,
                     customerCol: _customerCol,
                     customerRow: _customerRow,
                     characterEmoji: widget.character.emoji,

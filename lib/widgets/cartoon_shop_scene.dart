@@ -7,8 +7,8 @@ class CartoonShopScene extends StatelessWidget {
   const CartoonShopScene({
     super.key,
     required this.gridSize,
-    required this.playerCol,
-    required this.playerRow,
+    required this.playerNormX,
+    required this.playerNormY,
     required this.customerCol,
     required this.customerRow,
     required this.characterEmoji,
@@ -18,8 +18,8 @@ class CartoonShopScene extends StatelessWidget {
   });
 
   final int gridSize;
-  final int playerCol;
-  final int playerRow;
+  final double playerNormX;
+  final double playerNormY;
   final int customerCol;
   final int customerRow;
   final String characterEmoji;
@@ -28,6 +28,17 @@ class CartoonShopScene extends StatelessWidget {
   final bool playerNearCustomer;
 
   bool _owns(String id) => ownedFurnitureIds.contains(id);
+
+  Offset _normToScene(double normX, double normY, Size size) {
+    const floorLeft = 0.1;
+    const floorRight = 0.9;
+    const floorTop = 0.46;
+    const floorBottom = 0.94;
+
+    final x = size.width * (floorLeft + normX * (floorRight - floorLeft));
+    final y = size.height * (floorTop + normY * (floorBottom - floorTop));
+    return Offset(x, y);
+  }
 
   Offset _gridToScene(int col, int row, Size size) {
     const floorLeft = 0.1;
@@ -47,7 +58,7 @@ class CartoonShopScene extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
-        final playerPosition = _gridToScene(playerCol, playerRow, size);
+        final playerPosition = _normToScene(playerNormX, playerNormY, size);
         final customerPosition = _gridToScene(customerCol, customerRow, size);
 
         return ClipRRect(
@@ -93,7 +104,9 @@ class CartoonShopScene extends StatelessWidget {
                   size: 46,
                 ),
               ),
-              Positioned(
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOut,
                 left: playerPosition.dx - 38,
                 top: playerPosition.dy - 58,
                 child: ShopCharacter(
