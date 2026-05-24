@@ -1,15 +1,11 @@
-import 'dart:async';
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 
-import '../models/minigame_result.dart';
+import '../models/custom_recipe.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
-import '../services/sound_effects_service.dart';
 import '../widgets/minigame_common.dart';
 
-enum _GamePhase { intro, playing, finished }
+enum _CreatorPhase { editing, unlocked }
 
 class TeaTimeDashGamePage extends StatefulWidget {
   const TeaTimeDashGamePage({
@@ -21,127 +17,100 @@ class TeaTimeDashGamePage extends StatefulWidget {
   final PlayerCharacter player;
   final ShopGameState gameState;
 
-  /// Forces a recipe index in widget tests (0–2).
-  static int? testSequenceIndex;
-
   @override
   State<TeaTimeDashGamePage> createState() => _TeaTimeDashGamePageState();
 }
 
 class _TeaTimeDashGamePageState extends State<TeaTimeDashGamePage> {
-  static const _gameSeconds = 20;
+  final _nameController = TextEditingController();
+  int _suggestionIndex = 0;
 
-  static const _allActions = [
-    'Tea',
-    'Milk',
-    'Boba',
-    'Ice',
-    'Honey',
-    'Shake',
-    'Serve',
-  ];
+  String? _tea;
+  String? _milk;
+  String? _topping;
+  String? _flavor;
+  String? _message;
+  _CreatorPhase _phase = _CreatorPhase.editing;
+  CustomRecipe? _createdRecipe;
 
-  static const _sequences = [
-    ['Tea', 'Milk', 'Boba', 'Shake', 'Serve'],
-    ['Tea', 'Ice', 'Boba', 'Shake', 'Serve'],
-    ['Tea', 'Milk', 'Honey', 'Shake', 'Serve'],
-  ];
-
-  final Random _random = Random();
-
-  _GamePhase _phase = _GamePhase.intro;
-  int _drinksCompleted = 0;
-  int _secondsLeft = _gameSeconds;
-  bool _rewardClaimed = false;
-  MinigameResult? _result;
-
-  late List<String> _currentSequence;
-  int _stepIndex = 0;
-  String? _feedbackMessage;
-
-  Timer? _countdownTimer;
+  bool get _isComplete =>
+      _tea != null && _milk != null && _topping != null && _flavor != null;
 
   @override
   void dispose() {
-    _countdownTimer?.cancel();
+    _nameController.dispose();
     super.dispose();
   }
 
-  void _pickNewSequence() {
-    final index = TeaTimeDashGamePage.testSequenceIndex ??
-        _random.nextInt(_sequences.length);
-    _currentSequence = List<String>.from(_sequences[index]);
-    _stepIndex = 0;
-  }
-
-  void _startGame() {
-    _countdownTimer?.cancel();
-
+  void _applySuggestion(String name) {
     setState(() {
-      _phase = _GamePhase.playing;
-      _drinksCompleted = 0;
-      _secondsLeft = _gameSeconds;
-      _rewardClaimed = false;
-      _result = null;
-      _feedbackMessage = null;
-      _pickNewSequence();
-    });
-
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted || _phase != _GamePhase.playing) {
-        timer.cancel();
-        return;
-      }
-      setState(() {
-        _secondsLeft--;
-      });
-      if (_secondsLeft <= 0) {
-        _finishGame();
-      }
+      _nameController.text = name;
+      _message = null;
     });
   }
 
-  void _tapAction(String action) {
-    if (_phase != _GamePhase.playing) {
-      return;
-    }
+  void _cycleSuggestion() {
+    setState(() {
+      _suggestionIndex++;
+      _nameController.text = CustomRecipe.nameSuggestions[
+          _suggestionIndex % CustomRecipe.nameSuggestions.length];
+      _message = null;
+    });
+  }
 
-    final expected = _currentSequence[_stepIndex];
-    if (action == expected) {
+  String _recipeName() {
+    final typed = _nameController.text.trim();
+    if (typed.isNotEmpty) {
+      return typed;
+    }
+    return CustomRecipe.generateName(
+      tea: _tea,
+      milk: _milk,
+      topping: _topping,
+      flavor: _flavor,
+      suggestionIndex: _suggestionIndex,
+    );
+  }
+
+  void _createRecipe() {
+    if (!_isComplete) {
       setState(() {
-        _feedbackMessage = null;
-        _stepIndex++;
-        if (_stepIndex >= _currentSequence.length) {
-          _drinksCompleted++;
-          _pickNewSequence();
-        }
+        _message = 'Pick one tea, milk, topping, and flavor to continue! 🧋';
       });
       return;
     }
 
+    final recipe = CustomRecipe(
+      id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+      name: _recipeName(),
+      ingredients: CustomRecipe.ingredientsFromSelections(
+        tea: _tea,
+        milk: _milk,
+        topping: _topping,
+        flavor: _flavor,
+      ),
+    );
+
+    widget.gameState.addCustomRecipe(recipe);
+
     setState(() {
-      _feedbackMessage = 'Wrong step — follow the recipe!';
-      if (_drinksCompleted > 0) {
-        _drinksCompleted--;
-      }
+      _createdRecipe = recipe;
+      _phase = _CreatorPhase.unlocked;
+      _message = null;
     });
   }
 
-  void _finishGame() {
-    _countdownTimer?.cancel();
-
-    if (!_rewardClaimed) {
-      final result = MinigameResult.fromTeaTimeDashScore(_drinksCompleted);
-      widget.gameState.coins += result.coinsEarned;
-      _rewardClaimed = true;
-      _result = result;
-      if (result.coinsEarned > 0) {
-        SoundEffectsService.instance.playCoinDing();
-      }
-    }
-
+  void _createAnother() {
     setState(() {
-      _phase = _GamePhase.finished;
+      _phase = _CreatorPhase.editing;
+      _createdRecipe = null;
+      _tea = null;
+      _milk = null;
+      _topping = null;
+      _flavor = null;
+      _nameController.clear();
+      _suggestionIndex = 0;
+      _message = null;
     });
   }
 
@@ -153,96 +122,204 @@ class _TeaTimeDashGamePageState extends State<TeaTimeDashGamePage> {
       title: 'Tea Time Dash',
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: Column(
-          children: [
-            MinigameScoreBar(
-              scoreLabel: 'Drinks: $_drinksCompleted',
-              secondsLeft: _secondsLeft,
-              coins: widget.gameState.coins,
-              showTimer: _phase == _GamePhase.playing,
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Center(
+        child: _phase == _CreatorPhase.unlocked
+            ? SingleChildScrollView(
+                child: _UnlockPanel(
+                  recipe: _createdRecipe!,
+                  onCreateAnother: _createAnother,
+                  onBackToMinigames: () => Navigator.of(context).pop(),
+                  onBackToCafe: () => popBackToCafe(context),
+                ),
+              )
+            : SingleChildScrollView(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 520),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (_phase == _GamePhase.intro) ...[
-                          Text(
-                            'Brew drinks in the right order!',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF5C4A42),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Create your own boba recipe!',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF5C4A42),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Choose one from each group, name your drink, '
+                        'and unlock Recipe Bear as a special café guest.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.7),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 20),
+                      _IngredientGroup(
+                        groupId: 'tea',
+                        title: 'Tea base',
+                        options: CustomRecipe.teaBases,
+                        selected: _tea,
+                        onSelected: (value) => setState(() {
+                          _tea = value;
+                          _message = null;
+                        }),
+                      ),
+                      const SizedBox(height: 16),
+                      _IngredientGroup(
+                        groupId: 'milk',
+                        title: 'Milk',
+                        options: CustomRecipe.milks,
+                        selected: _milk,
+                        onSelected: (value) => setState(() {
+                          _milk = value;
+                          _message = null;
+                        }),
+                      ),
+                      const SizedBox(height: 16),
+                      _IngredientGroup(
+                        groupId: 'topping',
+                        title: 'Topping',
+                        options: CustomRecipe.toppings,
+                        selected: _topping,
+                        onSelected: (value) => setState(() {
+                          _topping = value;
+                          _message = null;
+                        }),
+                      ),
+                      const SizedBox(height: 16),
+                      _IngredientGroup(
+                        groupId: 'flavor',
+                        title: 'Flavor / special',
+                        options: CustomRecipe.flavors,
+                        selected: _flavor,
+                        onSelected: (value) => setState(() {
+                          _flavor = value;
+                          _message = null;
+                        }),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Recipe name',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF5C4A42),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        key: const Key('recipe_name_field'),
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          hintText: 'Name your cozy creation…',
+                          border: OutlineInputBorder(),
+                          filled: true,
+                        ),
+                        onChanged: (_) => setState(() => _message = null),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final name in CustomRecipe.nameSuggestions)
+                            ActionChip(
+                              label: Text(name),
+                              onPressed: () => _applySuggestion(name),
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Tap each prep step in order. '
-                            'Earn 2 coins per completed drink (max ${MinigameResult.maxCoinReward}).',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.7),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 20),
-                          FilledButton.icon(
-                            onPressed: _startGame,
-                            icon: const Icon(Icons.play_arrow_rounded),
-                            label: const Text('Start Game'),
-                          ),
-                        ] else if (_phase == _GamePhase.finished) ...[
-                          MinigameResultPanel(
-                            result: _result ??
-                                MinigameResult.fromTeaTimeDashScore(_drinksCompleted),
-                            scoreTitle: 'Drinks completed: $_drinksCompleted',
-                            onPlayAgain: _startGame,
-                            onBackToMinigames: () => Navigator.of(context).pop(),
-                            onBackToCafe: () => popBackToCafe(context),
-                            playAgainKey: const Key('tea_time_dash_play_again'),
-                          ),
-                        ] else ...[
-                          _SequenceDisplay(
-                            sequence: _currentSequence,
-                            stepIndex: _stepIndex,
-                          ),
-                          if (_feedbackMessage != null) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              _feedbackMessage!,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.error,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            alignment: WrapAlignment.center,
-                            children: _allActions.map((action) {
-                              return FilledButton.tonal(
-                                key: Key('tea_dash_$action'),
-                                onPressed: () => _tapAction(action),
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size(88, 44),
-                                ),
-                                child: Text(action),
-                              );
-                            }).toList(),
+                          ActionChip(
+                            label: const Text('Shuffle name'),
+                            onPressed: _cycleSuggestion,
                           ),
                         ],
+                      ),
+                      if (_message != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _message!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ],
-                    ),
+                      const SizedBox(height: 20),
+                      FilledButton.icon(
+                        key: const Key('create_recipe_button'),
+                        onPressed: _isComplete ? _createRecipe : _createRecipe,
+                        icon: const Icon(Icons.auto_awesome),
+                        label: const Text('Create Recipe'),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                      ),
+                      if (!_isComplete)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Select all four ingredient groups to unlock Create Recipe.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.55),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
+      ),
+    );
+  }
+}
+
+class _IngredientGroup extends StatelessWidget {
+  const _IngredientGroup({
+    required this.groupId,
+    required this.title,
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String groupId;
+  final String title;
+  final List<String> options;
+  final String? selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF5C4A42),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: options.map((option) {
+                return ChoiceChip(
+                  key: Key('recipe_${groupId}_$option'),
+                  label: Text(option),
+                  selected: selected == option,
+                  onSelected: (_) => onSelected(option),
+                );
+              }).toList(),
             ),
           ],
         ),
@@ -251,77 +328,107 @@ class _TeaTimeDashGamePageState extends State<TeaTimeDashGamePage> {
   }
 }
 
-class _SequenceDisplay extends StatelessWidget {
-  const _SequenceDisplay({
-    required this.sequence,
-    required this.stepIndex,
+class _UnlockPanel extends StatelessWidget {
+  const _UnlockPanel({
+    required this.recipe,
+    required this.onCreateAnother,
+    required this.onBackToMinigames,
+    required this.onBackToCafe,
   });
 
-  final List<String> sequence;
-  final int stepIndex;
+  final CustomRecipe recipe;
+  final VoidCallback onCreateAnother;
+  final VoidCallback onBackToMinigames;
+  final VoidCallback onBackToCafe;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF0E6),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFD4A574).withValues(alpha: 0.5),
-          width: 2,
-        ),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '🍵 Current Recipe',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF5C4A42),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: [
-              for (var i = 0; i < sequence.length; i++)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: i < stepIndex
-                        ? const Color(0xFFB8D4A8).withValues(alpha: 0.55)
-                        : i == stepIndex
-                            ? const Color(0xFFE8A598)
-                            : Colors.white.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: i == stepIndex
-                          ? const Color(0xFFD4897A)
-                          : const Color(0xFFD4A574).withValues(alpha: 0.4),
-                      width: i == stepIndex ? 2 : 1,
-                    ),
-                  ),
-                  child: Text(
-                    '${i + 1}. ${sequence[i]}',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight:
-                          i == stepIndex ? FontWeight.bold : FontWeight.w500,
-                      color: const Color(0xFF5C4A42),
-                    ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '✨ Recipe Created!',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF5C4A42),
                   ),
                 ),
-            ],
+                const SizedBox(height: 12),
+                Text(
+                  recipe.name,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  recipe.order.displayText,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8C9F5).withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text('✨🐻', style: TextStyle(fontSize: 36)),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Recipe Bear unlocked!',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF5C4A42),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Your special guest may visit the café and order '
+                        'your custom recipe.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.75),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  key: const Key('create_another_recipe'),
+                  onPressed: onCreateAnother,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Create Another Recipe'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: onBackToMinigames,
+                  child: const Text('Back to Mini Games'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: onBackToCafe,
+                  child: const Text('Back to Café'),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

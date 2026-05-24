@@ -1,12 +1,12 @@
-import '../data/starter_customers.dart';
 import 'bear_customer.dart';
 import 'customer_visit_state.dart';
+import 'shop_game_state.dart';
 
 /// One bear customer currently visiting the café floor.
 class ActiveCustomerVisit {
   ActiveCustomerVisit({
     required this.slotIndex,
-    required this.customerIndex,
+    required this.customerId,
     required this.seat,
     this.phase = CustomerVisitPhase.waitingToEnter,
     this.orderCompleted = false,
@@ -16,15 +16,16 @@ class ActiveCustomerVisit {
   /// Animation slot (0–2) — not tied to a fixed seat location.
   final int slotIndex;
 
-  /// Index into [starterCustomers].
-  int customerIndex;
+  /// Customer id from [ShopGameState.customerPool].
+  String customerId;
 
   CustomerSeatingSpot seat;
   CustomerVisitPhase phase;
   bool orderCompleted;
   int? coinReward;
 
-  BearCustomer get customer => starterCustomers[customerIndex];
+  BearCustomer customer(ShopGameState gameState) =>
+      gameState.customerById(customerId);
 
   bool get isSeated => phase == CustomerVisitPhase.seatedReadyToOrder;
 

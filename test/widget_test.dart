@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:bearista_boba/main.dart';
 import 'package:bearista_boba/models/seating_assignment.dart';
-import 'package:bearista_boba/pages/tea_time_dash_game_page.dart';
 import 'package:bearista_boba/services/coin_reward_service.dart';
 
 Future<void> _enterShop(
@@ -227,12 +226,10 @@ Future<void> _openMinigamesHub(WidgetTester tester) async {
 void main() {
   setUp(() {
     SeatingAssignment.testRandom = Random(42);
-    TeaTimeDashGamePage.testSequenceIndex = 0;
   });
 
   tearDown(() {
     SeatingAssignment.testRandom = null;
-    TeaTimeDashGamePage.testSequenceIndex = null;
     CoinRewardService.rollRewardOverride = null;
   });
 
@@ -353,6 +350,7 @@ void main() {
     expect(find.text('Boba Catch'), findsOneWidget);
     expect(find.text('Boba Stack'), findsOneWidget);
     expect(find.text('Tea Time Dash'), findsOneWidget);
+    expect(find.textContaining('Create your own boba recipe'), findsOneWidget);
     expect(find.text('Play'), findsNWidgets(3));
     expect(find.text('Coming later'), findsNothing);
   });
@@ -408,7 +406,7 @@ void main() {
     expect(find.textContaining('+2 coins earned!'), findsOneWidget);
   });
 
-  testWidgets('Tea Time Dash completes a drink sequence', (WidgetTester tester) async {
+  testWidgets('Tea Time Dash creates recipe and unlocks Recipe Bear', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
     await _openMinigamesHub(tester);
 
@@ -416,19 +414,38 @@ void main() {
     await tester.tap(find.byKey(const Key('minigame_play_tea_time_dash')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Start Game'));
+    expect(
+      find.textContaining('Create your own boba recipe'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('recipe_tea_Black Tea')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('recipe_milk_Milk')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('recipe_topping_Tapioca Pearls')));
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('recipe_flavor_Honey Drizzle')));
+    await tester.tap(find.byKey(const Key('recipe_flavor_Honey Drizzle')));
     await tester.pump();
 
-    for (final step in ['Tea', 'Milk', 'Boba', 'Shake', 'Serve']) {
-      await tester.tap(find.byKey(Key('tea_dash_$step')));
-      await tester.pump();
-    }
+    await tester.ensureVisible(find.byKey(const Key('recipe_name_field')));
+    await tester.enterText(
+      find.byKey(const Key('recipe_name_field')),
+      'Honey Cloud Boba',
+    );
+    await tester.pump();
 
-    expect(find.text('Drinks: 1'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('create_recipe_button')));
+    await tester.tap(find.byKey(const Key('create_recipe_button')));
+    await tester.pumpAndSettle();
 
-    await tester.pump(const Duration(seconds: 21));
-
-    expect(find.textContaining('Drinks completed: 1'), findsOneWidget);
-    expect(find.textContaining('+2 coins earned!'), findsOneWidget);
+    expect(find.textContaining('Recipe Created!'), findsOneWidget);
+    expect(find.text('Honey Cloud Boba'), findsOneWidget);
+    expect(find.textContaining('Recipe Bear unlocked!'), findsOneWidget);
+    expect(
+      find.textContaining('Black Tea + Milk + Tapioca Pearls + Honey Drizzle'),
+      findsOneWidget,
+    );
   });
 }

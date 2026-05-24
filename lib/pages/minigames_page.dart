@@ -160,7 +160,7 @@ class _MinigamesPageState extends State<MinigamesPage> {
                           title: 'Tea Time Dash',
                           emoji: '🍵',
                           description:
-                              'Brew drinks in order! Earn 2 coins per completed drink.',
+                              'Create your own boba recipe and unlock a special bear customer.',
                           playKey: const Key('minigame_play_tea_time_dash'),
                           onTap: _openTeaTimeDash,
                         ),

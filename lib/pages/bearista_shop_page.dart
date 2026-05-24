@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../models/bear_customer.dart';
-import '../models/player_character.dart';
 import '../models/drink_order.dart';
 import '../models/shop_game_state.dart';
 import '../services/coin_reward_service.dart';
 import '../services/sound_effects_service.dart';
 import '../widgets/cute_bear_avatar.dart';
+import '../models/player_character.dart';
 
 class BearistaShopPage extends StatefulWidget {
   const BearistaShopPage({
@@ -35,10 +35,17 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
     'Black Tea',
     'Green Tea',
     'Strawberry Tea',
+    'Matcha Tea',
     'Milk',
     'Oat Milk',
+    'Coconut Milk',
     'Tapioca Pearls',
     'Boba Jelly',
+    'Strawberry Jelly',
+    'Honey Drizzle',
+    'Vanilla',
+    'Lavender',
+    'Brown Sugar',
   ];
 
   final List<String> _selectedIngredients = [];
@@ -177,10 +184,25 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
                         size: 52 * _customer.sizeScale,
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        _customer.name,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _customer.name,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (_customer.isRecipeBear)
+                              Text(
+                                '${_customer.emoji} Special guest',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ],
@@ -194,11 +216,20 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _customer.order.displayText,
+                    _customer.orderDisplayText,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (_customer.customRecipeName != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      _customer.order.displayText,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

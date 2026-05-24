@@ -26,17 +26,6 @@ class MinigameResult {
     return (cupsStacked ~/ 2).clamp(0, maxCoinReward);
   }
 
-  /// Tea Time Dash: 2 coins per completed drink sequence.
-  static int coinsForTeaTimeDashScore(
-    int drinksCompleted, {
-    int maxCoinReward = maxCoinReward,
-  }) {
-    if (drinksCompleted <= 0) {
-      return 0;
-    }
-    return (drinksCompleted * 2).clamp(0, maxCoinReward);
-  }
-
   factory MinigameResult.fromBobaCatchScore(int score) {
     return MinigameResult(
       score: score,
@@ -48,13 +37,6 @@ class MinigameResult {
     return MinigameResult(
       score: cupsStacked,
       coinsEarned: coinsForBobaStackScore(cupsStacked),
-    );
-  }
-
-  factory MinigameResult.fromTeaTimeDashScore(int drinksCompleted) {
-    return MinigameResult(
-      score: drinksCompleted,
-      coinsEarned: coinsForTeaTimeDashScore(drinksCompleted),
     );
   }
 }

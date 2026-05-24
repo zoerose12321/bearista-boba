@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
@@ -58,6 +59,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   late List<int> _slotGenerations;
 
   int _nextReplacementIndex = _slotCount;
+  final Random _customerRandom = Random();
 
   bool _wasOnEntry = false;
   bool _isNavigatingToStore = false;
@@ -78,7 +80,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     _visits = List.generate(_slotCount, (slotIndex) {
       return ActiveCustomerVisit(
         slotIndex: slotIndex,
-        customerIndex: slotIndex,
+        customerId: starterCustomers[slotIndex].id,
         seat: initialSeats[slotIndex],
       );
     });
@@ -214,11 +216,12 @@ class _ShopWorldPageState extends State<ShopWorldPage>
         .map((visit) {
           final pos = _positionForVisit(visit);
           final isTarget = identical(visit, talkTarget);
+          final customer = visit.customer(widget.gameState);
           return SceneCustomerDisplay(
             normX: pos.dx,
             normY: pos.dy,
             phase: visit.phase,
-            customer: visit.customer,
+            customer: customer,
             isSeated: visit.isSeated,
             showSpeechPrompt: isTarget && visit.canTalk,
           );
@@ -226,11 +229,36 @@ class _ShopWorldPageState extends State<ShopWorldPage>
         .toList();
   }
 
+  String _pickReplacementCustomerId({required int excludingSlot}) {
+    final activeIds = <String>{};
+    for (var i = 0; i < _visits.length; i++) {
+      if (i == excludingSlot) {
+        continue;
+      }
+      final other = _visits[i];
+      if (other.phase == CustomerVisitPhase.waitingToEnter) {
+        continue;
+      }
+      activeIds.add(other.customerId);
+    }
+
+    final candidates = widget.gameState.customerPool
+        .where((customer) => !activeIds.contains(customer.id))
+        .toList();
+    if (candidates.isEmpty) {
+      final fallback =
+          starterCustomers[_nextReplacementIndex % starterCustomers.length];
+      _nextReplacementIndex++;
+      return fallback.id;
+    }
+
+    _nextReplacementIndex++;
+    return candidates[_customerRandom.nextInt(candidates.length)].id;
+  }
+
   void _replaceVisit(int slotIndex) {
     final visit = _visits[slotIndex];
-    visit.customerIndex =
-        _nextReplacementIndex % starterCustomers.length;
-    _nextReplacementIndex++;
+    visit.customerId = _pickReplacementCustomerId(excludingSlot: slotIndex);
     visit.orderCompleted = false;
     visit.coinReward = null;
     _assignRandomSeat(slotIndex);
@@ -336,7 +364,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
         builder: (context) => BearistaShopPage(
           player: widget.player,
           gameState: widget.gameState,
-          customer: visit.customer,
+          customer: visit.customer(widget.gameState),
           orderCompleted: visit.orderCompleted,
           coinReward: visit.coinReward,
           onOrderCompleted: (reward) {
@@ -397,7 +425,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     final anySeatedReady = _visits.any((visit) => visit.canTalk);
 
     if (talkTarget != null) {
-      return 'Walk closer to ${talkTarget.customer.name} to talk';
+      return 'Walk closer to ${talkTarget.customer(widget.gameState).name} to talk';
     }
     if (anyStillWalking && !anySeatedReady) {
       return 'Wait for customers to find their seats…';
