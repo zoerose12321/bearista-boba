@@ -784,60 +784,397 @@ class PastelLoungeGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scale = RestaurantSceneScale.furniture * 0.85;
+    final couchW = width * 0.82;
 
     return SizedBox(
       width: width,
       height: height,
       child: Stack(
         clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
         children: [
           Positioned(
-            left: width * 0.12,
-            top: height * 0.58,
+            bottom: height * 0.04,
             child: _LoungeAccentRug(
-              width: width * 0.52 * scale,
-              height: height * 0.30 * scale,
+              width: couchW * 0.95,
+              height: height * 0.22,
             ),
           ),
           Positioned(
-            right: width * 0.04,
-            top: height * 0.06,
-            child: _PastelCouchPiece(
-              width: width * 0.78 * scale,
-              height: height * 0.34 * scale,
-              color: const Color(0xFFF5C6D6),
-              accentColor: const Color(0xFFFFF5F0),
+            bottom: height * 0.10,
+            child: FrontViewPastelCouch(width: couchW),
+          ),
+          Positioned(
+            left: width * 0.02,
+            bottom: height * 0.16,
+            child: _LoungeSideTable(size: width * 0.13),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Front-facing cartoon sofa for the lounge nook (v0.1.22+).
+class FrontViewPastelCouch extends StatelessWidget {
+  const FrontViewPastelCouch({
+    super.key,
+    required this.width,
+    this.bodyColor = const Color(0xFFF5C6D6),
+    this.cushionColor = const Color(0xFFFFF5F0),
+    this.accentColor = const Color(0xFFE8A598),
+    this.legColor = const Color(0xFFC4956A),
+  });
+
+  final double width;
+  final Color bodyColor;
+  final Color cushionColor;
+  final Color accentColor;
+  final Color legColor;
+
+  double get height => width * 0.68;
+
+  @override
+  Widget build(BuildContext context) {
+    final armW = width * 0.11;
+    final legW = width * 0.07;
+    final legH = height * 0.08;
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          Positioned(
+            bottom: legH * 0.35,
+            child: Container(
+              width: width * 0.9,
+              height: height * 0.07,
+              decoration: BoxDecoration(
+                color: Colors.brown.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(height * 0.035),
+              ),
             ),
           ),
           Positioned(
-            left: width * 0.04,
-            top: height * 0.20,
-            child: _PastelArmchairPiece(
-              size: width * 0.30 * scale,
-              color: const Color(0xFFE8D4F0),
-              accentColor: const Color(0xFFFFF8FF),
-            ),
+            left: width * 0.14,
+            bottom: 0,
+            child: _CouchLeg(width: legW, height: legH, color: legColor),
           ),
           Positioned(
-            left: width * 0.30,
-            top: height * 0.46,
-            child: _LoungeCoffeeTablePiece(
-              width: width * 0.40 * scale,
-              height: height * 0.20 * scale,
-            ),
+            right: width * 0.14,
+            bottom: 0,
+            child: _CouchLeg(width: legW, height: legH, color: legColor),
           ),
           Positioned(
             left: width * 0.38,
-            top: height * 0.40,
-            child: _PastelArmchairPiece(
-              size: width * 0.24 * scale,
-              color: const Color(0xFFF5D6A8),
-              accentColor: const Color(0xFFFFF8F0),
+            bottom: 0,
+            child: _CouchLeg(width: legW * 0.85, height: legH * 0.92, color: legColor),
+          ),
+          Positioned(
+            right: width * 0.38,
+            bottom: 0,
+            child: _CouchLeg(width: legW * 0.85, height: legH * 0.92, color: legColor),
+          ),
+          Positioned(
+            left: armW * 0.55,
+            right: armW * 0.55,
+            bottom: legH * 0.75,
+            child: Container(
+              height: height * 0.16,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(height * 0.05),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            bottom: legH * 0.55,
+            child: _FrontCouchArm(
+              width: armW,
+              height: height * 0.52,
+              color: bodyColor,
+              accentColor: accentColor,
+            ),
+          ),
+          Positioned(
+            right: 0,
+            bottom: legH * 0.55,
+            child: _FrontCouchArm(
+              width: armW,
+              height: height * 0.52,
+              color: bodyColor,
+              accentColor: accentColor,
+            ),
+          ),
+          Positioned(
+            left: armW * 0.85,
+            right: armW * 0.85,
+            bottom: legH * 0.85,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _SeatCushion(
+                    height: height * 0.18,
+                    color: cushionColor,
+                    accentColor: accentColor,
+                  ),
+                ),
+                SizedBox(width: width * 0.03),
+                Expanded(
+                  child: _SeatCushion(
+                    height: height * 0.18,
+                    color: const Color(0xFFF0E8FF),
+                    accentColor: accentColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: armW * 0.7,
+            right: armW * 0.7,
+            bottom: legH * 0.85 + height * 0.16,
+            child: _BackCushion(
+              height: height * 0.42,
+              color: bodyColor,
+              accentColor: accentColor,
+              cushionColor: cushionColor,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CouchLeg extends StatelessWidget {
+  const _CouchLeg({
+    required this.width,
+    required this.height,
+    required this.color,
+  });
+
+  final double width;
+  final double height;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(width * 0.25),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.45)),
+      ),
+    );
+  }
+}
+
+class _FrontCouchArm extends StatelessWidget {
+  const _FrontCouchArm({
+    required this.width,
+    required this.height,
+    required this.color,
+    required this.accentColor,
+  });
+
+  final double width;
+  final double height;
+  final Color color;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            color,
+            color.withValues(alpha: 0.92),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(width * 0.35),
+        border: Border.all(color: accentColor.withValues(alpha: 0.45), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown.withValues(alpha: 0.10),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SeatCushion extends StatelessWidget {
+  const _SeatCushion({
+    required this.height,
+    required this.color,
+    required this.accentColor,
+  });
+
+  final double height;
+  final Color color;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(height * 0.28),
+        border: Border.all(color: accentColor.withValues(alpha: 0.35), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown.withValues(alpha: 0.08),
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BackCushion extends StatelessWidget {
+  const _BackCushion({
+    required this.height,
+    required this.color,
+    required this.accentColor,
+    required this.cushionColor,
+  });
+
+  final double height;
+  final Color color;
+  final Color accentColor;
+  final Color cushionColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        Container(
+          height: height,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                color,
+                color.withValues(alpha: 0.88),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(height * 0.18),
+            border: Border.all(color: accentColor.withValues(alpha: 0.45), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.brown.withValues(alpha: 0.10),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          top: height * 0.18,
+          left: height * 0.12,
+          right: height * 0.12,
+          child: Container(
+            height: height * 0.22,
+            decoration: BoxDecoration(
+              color: cushionColor.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(height * 0.08),
+            ),
+          ),
+        ),
+        Positioned(
+          top: height * 0.08,
+          left: height * 0.22,
+          child: _CouchPillow(size: height * 0.16, color: const Color(0xFFE8D4F0)),
+        ),
+        Positioned(
+          top: height * 0.08,
+          right: height * 0.22,
+          child: _CouchPillow(size: height * 0.16, color: const Color(0xFFF5D6A8)),
+        ),
+      ],
+    );
+  }
+}
+
+class _CouchPillow extends StatelessWidget {
+  const _CouchPillow({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size * 0.75,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(size * 0.25),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
+      ),
+    );
+  }
+}
+
+class _LoungeSideTable extends StatelessWidget {
+  const _LoungeSideTable({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: size,
+          height: size * 0.55,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8C9A0),
+            borderRadius: BorderRadius.circular(size * 0.18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.brown.withValues(alpha: 0.10),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Text('☕', style: TextStyle(fontSize: size * 0.28)),
+        ),
+        SizedBox(height: size * 0.06),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _CouchLeg(width: size * 0.12, height: size * 0.14, color: const Color(0xFFC4956A)),
+            SizedBox(width: size * 0.35),
+            _CouchLeg(width: size * 0.12, height: size * 0.14, color: const Color(0xFFC4956A)),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -856,222 +1193,12 @@ class _LoungeAccentRug extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFFF5C6D6).withValues(alpha: 0.55),
-            const Color(0xFFE8D4F0).withValues(alpha: 0.55),
+            const Color(0xFFF5C6D6).withValues(alpha: 0.50),
+            const Color(0xFFE8D4F0).withValues(alpha: 0.50),
           ],
         ),
         borderRadius: BorderRadius.circular(height * 0.45),
         border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.5),
-      ),
-    );
-  }
-}
-
-class _PastelCouchPiece extends StatelessWidget {
-  const _PastelCouchPiece({
-    required this.width,
-    required this.height,
-    required this.color,
-    required this.accentColor,
-  });
-
-  final double width;
-  final double height;
-  final Color color;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final armW = width * 0.14;
-    final seatH = height * 0.55;
-
-    return SizedBox(
-      width: width,
-      height: height,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            top: height * 0.08,
-            child: _CouchArm(width: armW, height: seatH, color: color),
-          ),
-          Positioned(
-            right: 0,
-            top: height * 0.08,
-            child: _CouchArm(width: armW, height: seatH, color: color),
-          ),
-          Positioned(
-            left: armW * 0.65,
-            right: armW * 0.65,
-            top: height * 0.22,
-            child: Container(
-              height: seatH * 0.88,
-              decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: BorderRadius.circular(seatH * 0.22),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.brown.withValues(alpha: 0.10),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            left: armW * 0.8,
-            right: armW * 0.8,
-            top: 0,
-            child: Container(
-              height: height * 0.28,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(height * 0.12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CouchArm extends StatelessWidget {
-  const _CouchArm({
-    required this.width,
-    required this.height,
-    required this.color,
-  });
-
-  final double width;
-  final double height;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(width * 0.45),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.brown.withValues(alpha: 0.08),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PastelArmchairPiece extends StatelessWidget {
-  const _PastelArmchairPiece({
-    required this.size,
-    required this.color,
-    required this.accentColor,
-  });
-
-  final double size;
-  final Color color;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size * 0.95,
-      child: Stack(
-        children: [
-          Positioned(
-            left: size * 0.08,
-            bottom: 0,
-            child: _CouchArm(
-              width: size * 0.18,
-              height: size * 0.55,
-              color: color,
-            ),
-          ),
-          Positioned(
-            right: size * 0.08,
-            bottom: 0,
-            child: _CouchArm(
-              width: size * 0.18,
-              height: size * 0.55,
-              color: color,
-            ),
-          ),
-          Positioned(
-            left: size * 0.18,
-            right: size * 0.18,
-            bottom: size * 0.08,
-            child: Container(
-              height: size * 0.42,
-              decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: BorderRadius.circular(size * 0.14),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
-              ),
-            ),
-          ),
-          Positioned(
-            left: size * 0.20,
-            right: size * 0.20,
-            top: 0,
-            child: Container(
-              height: size * 0.30,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(size * 0.12),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LoungeCoffeeTablePiece extends StatelessWidget {
-  const _LoungeCoffeeTablePiece({
-    required this.width,
-    required this.height,
-  });
-
-  final double width;
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8C9A0),
-        borderRadius: BorderRadius.circular(height),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.7), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.brown.withValues(alpha: 0.10),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: Container(
-        width: width * 0.35,
-        height: height * 0.35,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF8F0).withValues(alpha: 0.85),
-          shape: BoxShape.circle,
-        ),
       ),
     );
   }
