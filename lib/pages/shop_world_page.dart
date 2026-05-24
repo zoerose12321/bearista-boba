@@ -11,6 +11,7 @@ import '../models/shop_game_state.dart';
 import '../widgets/cartoon_shop_scene.dart';
 import '../widgets/shop_decoration.dart';
 import 'bearista_shop_page.dart';
+import 'character_creator_page.dart';
 import 'shop_upgrades_page.dart';
 import 'store_page.dart';
 
@@ -330,6 +331,17 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     setState(() {});
   }
 
+  Future<void> _openCharacterEditor() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => CharacterCreatorPage(
+          player: widget.player,
+        ),
+      ),
+    );
+    setState(() {});
+  }
+
   String _talkHint(ActiveCustomerVisit? talkTarget) {
     final anyStillWalking = _visits.any(
       (visit) =>
@@ -392,6 +404,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                               player: widget.player,
                               ownedFurnitureIds:
                                   widget.gameState.ownedFurnitureIds,
+                              onPlayerTap: _openCharacterEditor,
                             ),
                           );
                         },
@@ -461,6 +474,15 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                     textAlign: TextAlign.center,
                                   ),
                                 ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Tap your bear to customize',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.45),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
                               ],
                             ),
                           ),

@@ -3,21 +3,23 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:bearista_boba/main.dart';
 
-Future<void> _createCharacterAndEnterShop(
+Future<void> _enterShop(
   WidgetTester tester, {
-  String name = 'Mochi',
-  bool tapStart = true,
+  String? customName,
 }) async {
-  if (tapStart) {
-    await tester.tap(find.text('Start'));
+  await tester.tap(find.text('Start'));
+  await tester.pumpAndSettle();
+
+  if (customName != null) {
+    await tester.tap(find.byKey(const Key('shop_player_tap')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), customName);
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('save_character_changes')));
     await tester.pumpAndSettle();
   }
-
-  await tester.enterText(find.byType(TextField), name);
-  await tester.pump();
-
-  await tester.tap(find.byKey(const Key('continue_to_shop')));
-  await tester.pumpAndSettle();
 }
 
 Future<void> _waitForCustomersSeated(WidgetTester tester) async {
@@ -62,7 +64,7 @@ Future<void> _walkToPandaFromTableOne(WidgetTester tester) async {
 }
 
 Future<void> _openBearistaShopForHoney(WidgetTester tester) async {
-  await _createCharacterAndEnterShop(tester);
+  await _enterShop(tester);
   await _walkToHoneyBear(tester);
   await tester.tap(find.text('Talk'));
   await tester.pumpAndSettle();
@@ -84,19 +86,14 @@ void main() {
     await tester.pumpWidget(const BearistaBobaApp());
 
     expect(find.text('Bearista Boba'), findsOneWidget);
-    expect(find.text('A cozy boba shop game'), findsOneWidget);
+    expect(find.text('Run your cozy boba café'), findsOneWidget);
     expect(find.text('Start'), findsOneWidget);
   });
 
   testWidgets('Navigation flow reaches shop world and bearista shop', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
 
-    await tester.tap(find.text('Start'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Create Your Bearista'), findsOneWidget);
-
-    await _createCharacterAndEnterShop(tester, name: 'Sunny', tapStart: false);
+    await _enterShop(tester, customName: 'Sunny');
 
     expect(find.text('Sunny\'s Shop'), findsOneWidget);
     expect(find.text('Talk'), findsOneWidget);
@@ -134,7 +131,7 @@ void main() {
 
   testWidgets('Talk opens selected customer order', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
-    await _createCharacterAndEnterShop(tester);
+    await _enterShop(tester);
     await _walkToPandaBear(tester);
     await tester.tap(find.text('Talk'));
     await tester.pumpAndSettle();

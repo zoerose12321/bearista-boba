@@ -56,12 +56,12 @@ class PlayerCharacter {
   /// Default bearista look before any purchased outfit.
   static const starterOutfitId = 'starter_default';
 
-  final String name;
-  final BearFur fur;
-  final BearAccent accent;
+  String name;
+  BearFur fur;
+  BearAccent accent;
 
-  /// Accessory chosen during character creation.
-  final BearAccessory accessory;
+  /// Accessory chosen during character customization.
+  BearAccessory accessory;
 
   /// Currently worn outfit id (`starter_default` or a purchased apron id).
   String equippedOutfitId;
@@ -69,11 +69,31 @@ class PlayerCharacter {
   /// Currently worn store accessory id, if any.
   String? equippedAccessoryId;
 
+  factory PlayerCharacter.defaultBearista() {
+    return PlayerCharacter(
+      name: 'Bearista',
+      fur: BearFur.honey,
+      accent: BearAccent.peach,
+    );
+  }
+
   Color get furColor => fur.color;
   Color get accentColor => accent.color;
   bool get isPanda => fur.isPanda;
 
   String get displayName => name.trim().isEmpty ? 'Bearista' : name.trim();
+
+  void applyCustomization({
+    required String name,
+    required BearFur fur,
+    required BearAccent accent,
+    required BearAccessory accessory,
+  }) {
+    this.name = name.trim().isEmpty ? 'Bearista' : name.trim();
+    this.fur = fur;
+    this.accent = accent;
+    this.accessory = accessory;
+  }
 
   bool get hasPurchasedOutfitEquipped =>
       equippedOutfitId != starterOutfitId;

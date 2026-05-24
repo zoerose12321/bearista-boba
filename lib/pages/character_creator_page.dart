@@ -1,29 +1,43 @@
 import 'package:flutter/material.dart';
 
 import '../models/player_character.dart';
-import '../models/shop_game_state.dart';
 import '../widgets/cute_bear_avatar.dart';
-import 'shop_world_page.dart';
 
 class CharacterCreatorPage extends StatefulWidget {
-  const CharacterCreatorPage({super.key});
+  const CharacterCreatorPage({
+    super.key,
+    required this.player,
+  });
+
+  final PlayerCharacter player;
 
   @override
   State<CharacterCreatorPage> createState() => _CharacterCreatorPageState();
 }
 
 class _CharacterCreatorPageState extends State<CharacterCreatorPage> {
-  final _nameController = TextEditingController(text: 'Bearista');
+  late final TextEditingController _nameController;
 
-  BearFur _fur = BearFur.honey;
-  BearAccent _accent = BearAccent.peach;
-  BearAccessory _accessory = BearAccessory.none;
+  late BearFur _fur;
+  late BearAccent _accent;
+  late BearAccessory _accessory;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.player.name);
+    _fur = widget.player.fur;
+    _accent = widget.player.accent;
+    _accessory = widget.player.accessory;
+  }
 
   PlayerCharacter get _previewCharacter => PlayerCharacter(
         name: _nameController.text,
         fur: _fur,
         accent: _accent,
         accessory: _accessory,
+        equippedOutfitId: widget.player.equippedOutfitId,
+        equippedAccessoryId: widget.player.equippedAccessoryId,
       );
 
   @override
@@ -32,16 +46,14 @@ class _CharacterCreatorPageState extends State<CharacterCreatorPage> {
     super.dispose();
   }
 
-  void _continueToShop() {
-    final player = _previewCharacter;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => ShopWorldPage(
-          player: player,
-          gameState: ShopGameState(),
-        ),
-      ),
+  void _saveChanges() {
+    widget.player.applyCustomization(
+      name: _nameController.text,
+      fur: _fur,
+      accent: _accent,
+      accessory: _accessory,
     );
+    Navigator.of(context).pop();
   }
 
   @override
@@ -51,7 +63,7 @@ class _CharacterCreatorPageState extends State<CharacterCreatorPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Your Bearista'),
+        title: const Text('Customize Your Bearista'),
       ),
       body: Column(
         children: [
@@ -71,11 +83,8 @@ class _CharacterCreatorPageState extends State<CharacterCreatorPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        CuteBearAvatar(
-                          furColor: preview.furColor,
-                          accentColor: preview.accentColor,
-                          accessory: preview.accessory,
-                          isPanda: preview.isPanda,
+                        PlayerBearAvatar(
+                          player: preview,
                           size: 96,
                           nameLabel: preview.displayName,
                           showStandingSpot: true,
@@ -148,17 +157,26 @@ class _CharacterCreatorPageState extends State<CharacterCreatorPage> {
                     );
                   }).toList(),
                 ),
+                if (widget.player.equippedAccessoryId != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Store accessories stay equipped until changed in the store.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(16),
             child: FilledButton(
-              key: const Key('continue_to_shop'),
-              onPressed: _continueToShop,
+              key: const Key('save_character_changes'),
+              onPressed: _saveChanges,
               child: const Padding(
                 padding: EdgeInsets.symmetric(vertical: 4),
-                child: Text('Continue to Shop'),
+                child: Text('Save Changes'),
               ),
             ),
           ),

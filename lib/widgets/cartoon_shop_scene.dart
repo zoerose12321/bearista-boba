@@ -76,6 +76,7 @@ class CartoonShopScene extends StatelessWidget {
     required this.customers,
     required this.player,
     required this.ownedFurnitureIds,
+    this.onPlayerTap,
   });
 
   final double playerNormX;
@@ -83,6 +84,7 @@ class CartoonShopScene extends StatelessWidget {
   final List<SceneCustomerDisplay> customers;
   final PlayerCharacter player;
   final Set<String> ownedFurnitureIds;
+  final VoidCallback? onPlayerTap;
 
   bool _owns(String id) => ownedFurnitureIds.contains(id);
 
@@ -295,14 +297,19 @@ class CartoonShopScene extends StatelessWidget {
                 top: playerPos.dy - playerOffsetY,
                 child: Opacity(
                   opacity: _playerBehindCounter ? 0.88 : 1.0,
-                  child: ShopCharacter(
-                    furColor: player.furColor,
-                    accentColor: player.accentColor,
-                    accessory: player.displayAccessory,
-                    apronColor: player.equippedApronColor,
-                    isPanda: player.isPanda,
-                    size: RestaurantSceneScale.playerBearSize,
-                    isPlayer: true,
+                  child: GestureDetector(
+                    key: const Key('shop_player_tap'),
+                    onTap: onPlayerTap,
+                    behavior: HitTestBehavior.opaque,
+                    child: ShopCharacter(
+                      furColor: player.furColor,
+                      accentColor: player.accentColor,
+                      accessory: player.displayAccessory,
+                      apronColor: player.equippedApronColor,
+                      isPanda: player.isPanda,
+                      size: RestaurantSceneScale.playerBearSize,
+                      isPlayer: true,
+                    ),
                   ),
                 ),
               ),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'character_creator_page.dart';
+import '../models/player_character.dart';
+import '../models/shop_game_state.dart';
 import '../widgets/music_toggle_button.dart';
+import 'shop_world_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -42,9 +44,17 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'A cozy boba shop game',
+                      'Run your cozy boba café',
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tap your bear in the café to customize',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -53,7 +63,10 @@ class HomePage extends StatelessWidget {
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (context) => const CharacterCreatorPage(),
+                            builder: (context) => ShopWorldPage(
+                              player: PlayerCharacter.defaultBearista(),
+                              gameState: ShopGameState(),
+                            ),
                           ),
                         );
                       },
