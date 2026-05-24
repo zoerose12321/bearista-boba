@@ -25,9 +25,9 @@ class _RestaurantZones {
   static const seatingB = _Zone(0.08, 0.42, 0.34, 0.60);
   static const cozyTableSlot = _Zone(0.08, 0.62, 0.34, 0.76);
   static const rugSlot = _Zone(0.36, 0.52, 0.52, 0.68);
-  static const customerArea = _Zone(0.46, 0.30, 0.64, 0.46);
-  static const counter = _Zone(0.68, 0.06, 0.94, 0.28);
-  static const signSlot = _Zone(0.70, 0.02, 0.92, 0.08);
+  static const customerArea = _Zone(0.40, 0.30, 0.56, 0.50);
+  static const counter = _Zone(0.58, 0.03, 0.97, 0.36);
+  static const signSlot = _Zone(0.60, 0.00, 0.96, 0.06);
   // Walk path — kept clear of furniture (entry → customer).
   static const walkPath = _Zone(0.22, 0.38, 0.58, 0.78);
 }
@@ -91,7 +91,8 @@ class CartoonShopScene extends StatelessWidget {
   bool _owns(String id) => ownedFurnitureIds.contains(id);
 
   bool get _playerBehindCounter =>
-      playerNormX >= 0.64 && playerNormY <= 0.22;
+      playerNormX >= RestaurantSceneScale.behindCounterMinX &&
+      playerNormY <= RestaurantSceneScale.behindCounterMaxY;
 
   Offset _normToScene(double normX, double normY, Size size) {
     const padL = 0.06;
@@ -234,8 +235,8 @@ class CartoonShopScene extends StatelessWidget {
                   showVase: _owns('flower_vase'),
                   scale: RestaurantSceneScale.counter,
                 ),
-                widthFactor: 0.96,
-                heightFactor: 0.96,
+                widthFactor: 0.98,
+                heightFactor: 0.98,
               ),
               if (_owns('boba_wall_sign'))
                 _inZone(
@@ -309,33 +310,54 @@ class _CounterCluster extends StatelessWidget {
       builder: (context, constraints) {
         final w = constraints.maxWidth;
         final h = constraints.maxHeight;
-        final itemScale = scale * RestaurantSceneScale.detail;
-        final emojiSize = 18.0 * itemScale;
-        final vaseSize = 16.0 * itemScale;
+        final itemScale = scale * RestaurantSceneScale.counterDetail;
+        final emojiSize = 20.0 * itemScale;
+        final vaseSize = 18.0 * itemScale;
+        final stationSize = 22.0 * itemScale;
 
         return Stack(
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              left: w * 0.06,
-              top: h * 0.06,
+              left: w * 0.04,
+              top: h * 0.04,
               right: 0,
-              child: TopDownCounter(width: w * 0.90, height: h * 0.46),
+              child: TopDownCounter(width: w * 0.94, height: h * 0.54),
             ),
             Positioned(
               right: 0,
               top: 0,
               child: Container(
-                width: w * 0.24,
-                height: h * 0.76,
+                width: w * 0.32,
+                height: h * 0.90,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [Color(0xFFE8C9A0), Color(0xFFD4A574)],
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.brown.withValues(alpha: 0.12),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned(
+                      top: h * 0.18,
+                      child: Text('🫖', style: TextStyle(fontSize: stationSize)),
+                    ),
+                    Positioned(
+                      bottom: h * 0.22,
+                      child: Text('🧋', style: TextStyle(fontSize: emojiSize)),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -349,8 +371,8 @@ class _CounterCluster extends StatelessWidget {
               ),
             ),
             Positioned(
-              right: w * 0.02,
-              top: h * 0.46,
+              right: w * 0.01,
+              top: h * 0.50,
               child: Transform.scale(
                 scale: itemScale,
                 alignment: Alignment.topRight,
@@ -358,14 +380,14 @@ class _CounterCluster extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: w * 0.40,
-              top: h * 0.20,
+              left: w * 0.36,
+              top: h * 0.18,
               child: Text('🧋', style: TextStyle(fontSize: emojiSize)),
             ),
             if (showVase)
               Positioned(
-                left: w * 0.60,
-                top: h * 0.16,
+                left: w * 0.54,
+                top: h * 0.14,
                 child: Text('🌸', style: TextStyle(fontSize: vaseSize)),
               ),
           ],
@@ -383,7 +405,7 @@ class _CounterSideLip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 8,
+      width: 10,
       height: height,
       decoration: BoxDecoration(
         color: const Color(0xFFC4956A),
@@ -418,11 +440,14 @@ class _CounterMenuBoard extends StatelessWidget {
             'MENU',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 6 * RestaurantSceneScale.detail,
+              fontSize: 6 * RestaurantSceneScale.counterDetail,
               fontWeight: FontWeight.bold,
             ),
           ),
-          Text('🍵', style: TextStyle(fontSize: 10 * RestaurantSceneScale.detail)),
+          Text(
+            '🍵',
+            style: TextStyle(fontSize: 10 * RestaurantSceneScale.counterDetail),
+          ),
         ],
       ),
     );

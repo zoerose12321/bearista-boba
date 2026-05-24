@@ -280,15 +280,21 @@ class RestaurantSceneScale {
   static const furniture = 1.58;
   static const stool = 1.45;
   static const plant = 1.42;
-  static const counter = 1.55;
+  static const counter = 2.05;
   static const entry = 1.56;
   static const upgrade = 1.62;
-  /// Register, menu board, and counter emoji readability boost (v0.1.12).
+  /// Register, menu board, and counter emoji readability boost (v0.1.12+).
   static const detail = 1.38;
+  /// Extra detail scale for the enlarged service counter (v0.1.13).
+  static const counterDetail = 1.78;
   static const zoneFill = 0.96;
 
   static const playerBearSize = 68.0;
   static const customerBearSize = 74.0;
+
+  /// Normalized coords for behind-counter movement and visibility.
+  static const behindCounterMinX = 0.58;
+  static const behindCounterMaxY = 0.30;
 
   /// Minimum readable label size after scene downscaling.
   static const minLabelFontSize = 10.0;
@@ -560,7 +566,7 @@ class TopDownCounter extends StatelessWidget {
             top: height * 0.25,
             child: Text(
               '🧋',
-              style: TextStyle(fontSize: 20 * RestaurantSceneScale.detail),
+              style: TextStyle(fontSize: 20 * RestaurantSceneScale.counterDetail),
             ),
           ),
           Positioned(
@@ -568,13 +574,13 @@ class TopDownCounter extends StatelessWidget {
             top: height * 0.25,
             child: Text(
               '☕',
-              style: TextStyle(fontSize: 18 * RestaurantSceneScale.detail),
+              style: TextStyle(fontSize: 18 * RestaurantSceneScale.counterDetail),
             ),
           ),
           Center(
             child: Container(
-              width: width * 0.5,
-              height: 4,
+              width: width * 0.55,
+              height: 5,
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(4),
@@ -610,7 +616,7 @@ class TopDownRegister extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         '💳',
-        style: TextStyle(fontSize: 16 * RestaurantSceneScale.detail),
+        style: TextStyle(fontSize: 16 * RestaurantSceneScale.counterDetail),
       ),
     );
   }
