@@ -28,6 +28,9 @@ class CartoonShopScene extends StatelessWidget {
 
   bool _owns(String id) => ownedFurnitureIds.contains(id);
 
+  bool get _playerBehindCounter =>
+      playerNormX <= 0.40 && playerNormY <= 0.24;
+
   Offset _normToScene(double normX, double normY, Size size) {
     const floorLeft = 0.06;
     const floorRight = 0.94;
@@ -46,8 +49,33 @@ class CartoonShopScene extends StatelessWidget {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
         final playerPosition = _normToScene(playerNormX, playerNormY, size);
         final customerPosition = _normToScene(customerNormX, customerNormY, size);
-        final tableW = size.width * 0.16;
-        final tableH = size.width * 0.11;
+        final tableW = size.width * 0.15;
+        final tableH = size.width * 0.10;
+        final counterLeft = size.width * 0.04;
+        final counterTop = size.height * 0.05;
+        final counterWidth = size.width * 0.50;
+        final counterHeight = size.height * 0.15;
+
+        final playerWidget = ShopCharacter(
+          furColor: player.furColor,
+          accentColor: player.accentColor,
+          accessory: player.accessory,
+          isPanda: player.isPanda,
+          size: 44,
+          isPlayer: true,
+        );
+
+        final customerWidget = ShopCharacter(
+          furColor: customer.furColor,
+          accentColor: customer.accentColor,
+          muzzleColor: customer.muzzleColor,
+          accessory: customer.accessory,
+          isPanda: customer.isPanda,
+          sizeScale: customer.sizeScale,
+          nameLabel: customer.name,
+          speechText: playerNearCustomer ? 'Ready to order?' : null,
+          size: 48,
+        );
 
         return ClipRRect(
           borderRadius: BorderRadius.circular(24),
@@ -57,41 +85,40 @@ class CartoonShopScene extends StatelessWidget {
               const _RestaurantRoom(),
               if (_owns('pastel_rug'))
                 Align(
-                  alignment: const Alignment(0, 0.15),
+                  alignment: const Alignment(0.12, 0.22),
                   child: TopDownRug(
-                    width: size.width * 0.34,
-                    height: size.width * 0.22,
+                    width: size.width * 0.30,
+                    height: size.width * 0.20,
                   ),
                 ),
               Positioned(
-                left: size.width * 0.14,
-                top: size.height * 0.08,
-                right: size.width * 0.14,
+                left: counterLeft,
+                top: counterTop,
                 child: TopDownCounter(
-                  width: size.width * 0.72,
-                  height: size.height * 0.14,
+                  width: counterWidth,
+                  height: counterHeight,
                 ),
               ),
-              if (_owns('boba_wall_sign'))
-                Positioned(
-                  top: size.height * 0.02,
-                  left: size.width * 0.38,
-                  child: const TopDownWallSign(),
-                ),
               Positioned(
-                right: size.width * 0.08,
-                top: size.height * 0.1,
-                child: const TopDownRegister(),
+                left: counterLeft,
+                top: counterTop,
+                child: Container(
+                  width: size.width * 0.11,
+                  height: size.height * 0.20,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFFE8C9A0), Color(0xFFD4A574)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+                  ),
+                ),
               ),
-              if (_owns('flower_vase'))
-                Positioned(
-                  left: size.width * 0.42,
-                  top: size.height * 0.11,
-                  child: const Text('🌸', style: TextStyle(fontSize: 22)),
-                ),
               Positioned(
-                left: size.width * 0.1,
-                top: size.height * 0.34,
+                left: size.width * 0.48,
+                top: size.height * 0.38,
                 child: TopDownTableSet(
                   tableWidth: tableW,
                   tableHeight: tableH,
@@ -99,8 +126,8 @@ class CartoonShopScene extends StatelessWidget {
                 ),
               ),
               Positioned(
-                right: size.width * 0.12,
-                top: size.height * 0.36,
+                right: size.width * 0.1,
+                top: size.height * 0.34,
                 child: TopDownTableSet(
                   tableWidth: tableW * 0.95,
                   tableHeight: tableH * 0.95,
@@ -109,8 +136,8 @@ class CartoonShopScene extends StatelessWidget {
                 ),
               ),
               Positioned(
-                left: size.width * 0.38,
-                top: size.height * 0.52,
+                right: size.width * 0.14,
+                bottom: size.height * 0.34,
                 child: TopDownTableSet(
                   tableWidth: tableW * 0.9,
                   tableHeight: tableH * 0.9,
@@ -120,8 +147,8 @@ class CartoonShopScene extends StatelessWidget {
               ),
               if (_owns('cozy_table'))
                 Positioned(
-                  left: size.width * 0.06,
-                  bottom: size.height * 0.22,
+                  right: size.width * 0.08,
+                  top: size.height * 0.52,
                   child: TopDownTableSet(
                     tableWidth: tableW * 1.05,
                     tableHeight: tableH * 1.05,
@@ -131,8 +158,8 @@ class CartoonShopScene extends StatelessWidget {
                 ),
               if (_owns('comfy_chair'))
                 Positioned(
-                  right: size.width * 0.18,
-                  top: size.height * 0.48,
+                  right: size.width * 0.22,
+                  top: size.height * 0.46,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -154,49 +181,120 @@ class CartoonShopScene extends StatelessWidget {
                 ),
               Positioned(
                 right: size.width * 0.06,
-                bottom: size.height * 0.28,
-                child: TopDownPlant(size: size.width * 0.11),
+                bottom: size.height * 0.12,
+                child: TopDownPlant(size: size.width * 0.10),
               ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: size.height * 0.04),
-                  child: TopDownDoor(width: size.width * 0.18),
-                ),
+              Positioned(
+                left: size.width * 0.04,
+                bottom: size.height * 0.04,
+                child: TopDownDoor(width: size.width * 0.16),
               ),
               Positioned(
                 left: customerPosition.dx - 48,
                 top: customerPosition.dy - 88,
-                child: ShopCharacter(
-                  furColor: customer.furColor,
-                  accentColor: customer.accentColor,
-                  muzzleColor: customer.muzzleColor,
-                  accessory: customer.accessory,
-                  isPanda: customer.isPanda,
-                  sizeScale: customer.sizeScale,
-                  nameLabel: customer.name,
-                  speechText: playerNearCustomer ? 'Ready to order?' : null,
-                  size: 48,
-                ),
+                child: customerWidget,
               ),
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOut,
                 left: playerPosition.dx - 44,
                 top: playerPosition.dy - 72,
-                child: ShopCharacter(
-                  furColor: player.furColor,
-                  accentColor: player.accentColor,
-                  accessory: player.accessory,
-                  isPanda: player.isPanda,
-                  size: 44,
-                  isPlayer: true,
+                child: Opacity(
+                  opacity: _playerBehindCounter ? 0.88 : 1.0,
+                  child: playerWidget,
                 ),
               ),
+              if (_playerBehindCounter)
+                Positioned(
+                  left: counterLeft,
+                  top: counterTop + counterHeight - 8,
+                  child: _CounterFrontLip(width: counterWidth + size.width * 0.08),
+                ),
+              if (_owns('boba_wall_sign'))
+                Positioned(
+                  top: size.height * 0.015,
+                  left: size.width * 0.12,
+                  child: const TopDownWallSign(),
+                ),
+              Positioned(
+                left: counterLeft + counterWidth * 0.62,
+                top: counterTop + counterHeight * 0.15,
+                child: const TopDownRegister(),
+              ),
+              Positioned(
+                left: counterLeft + counterWidth * 0.08,
+                top: counterTop - size.height * 0.01,
+                child: _CounterMenuBoard(),
+              ),
+              Positioned(
+                left: counterLeft + counterWidth * 0.38,
+                top: counterTop + counterHeight * 0.2,
+                child: const Text('🧋', style: TextStyle(fontSize: 20)),
+              ),
+              if (_owns('flower_vase'))
+                Positioned(
+                  left: counterLeft + counterWidth * 0.78,
+                  top: counterTop + counterHeight * 0.12,
+                  child: const Text('🌸', style: TextStyle(fontSize: 20)),
+                ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _CounterFrontLip extends StatelessWidget {
+  const _CounterFrontLip({required this.width});
+
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: 14,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFC4956A),
+            const Color(0xFFB8845A).withValues(alpha: 0.95),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown.withValues(alpha: 0.18),
+            blurRadius: 4,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+      ),
+    );
+  }
+}
+
+class _CounterMenuBoard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 56,
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF5C4A42),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFD4A574), width: 2),
+      ),
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('MENU', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+          SizedBox(height: 2),
+          Text('🍵', style: TextStyle(fontSize: 12)),
+        ],
+      ),
     );
   }
 }
@@ -209,8 +307,8 @@ class _RestaurantRoom extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: RadialGradient(
-          center: const Alignment(0, 0.2),
-          radius: 1.1,
+          center: const Alignment(-0.3, 0.3),
+          radius: 1.2,
           colors: [
             const Color(0xFFFFF8F0),
             const Color(0xFFF5E6D3),

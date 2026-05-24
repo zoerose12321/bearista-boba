@@ -28,17 +28,17 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
   static const _horizontalStep = 0.05;
   static const _verticalStep = 0.09;
 
-  static const _customerNormX = 0.58;
-  static const _customerNormY = 0.30;
+  static const _customerNormX = 0.38;
+  static const _customerNormY = 0.32;
   static const _talkRangeInSteps = 6.0;
 
-  static const _minX = 0.08;
+  static const _minX = 0.06;
   static const _maxX = 0.92;
-  static const _minY = 0.14;
+  static const _minY = 0.06;
   static const _maxY = 0.88;
 
-  double _playerNormX = 0.55;
-  double _playerNormY = 0.70;
+  double _playerNormX = 0.14;
+  double _playerNormY = 0.82;
 
   BearCustomer get _currentCustomer =>
       starterCustomers[widget.gameState.currentCustomerIndex];

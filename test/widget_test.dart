@@ -20,8 +20,20 @@ Future<void> _createCharacterAndEnterShop(
   await tester.pumpAndSettle();
 }
 
+Future<void> _walkToCustomer(WidgetTester tester) async {
+  for (var i = 0; i < 7; i++) {
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_up_rounded));
+    await tester.pump(const Duration(milliseconds: 180));
+  }
+  for (var i = 0; i < 4; i++) {
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_right_rounded));
+    await tester.pump(const Duration(milliseconds: 180));
+  }
+}
+
 Future<void> _openBearistaShop(WidgetTester tester) async {
   await _createCharacterAndEnterShop(tester);
+  await _walkToCustomer(tester);
   await tester.tap(find.text('Talk'));
   await tester.pumpAndSettle();
 }
@@ -61,6 +73,7 @@ void main() {
     expect(find.text('Shop Upgrades'), findsOneWidget);
     expect(find.text('Honey Bear'), findsOneWidget);
 
+    await _walkToCustomer(tester);
     await tester.tap(find.text('Talk'));
     await tester.pumpAndSettle();
 
