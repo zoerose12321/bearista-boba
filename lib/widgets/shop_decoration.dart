@@ -770,3 +770,309 @@ class TopDownWallSign extends StatelessWidget {
     );
   }
 }
+
+/// Default pastel couch nook for the right-side lounge area (v0.1.21+).
+class PastelLoungeGroup extends StatelessWidget {
+  const PastelLoungeGroup({
+    super.key,
+    required this.width,
+    required this.height,
+  });
+
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = RestaurantSceneScale.furniture * 0.85;
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: width * 0.12,
+            top: height * 0.58,
+            child: _LoungeAccentRug(
+              width: width * 0.52 * scale,
+              height: height * 0.30 * scale,
+            ),
+          ),
+          Positioned(
+            right: width * 0.04,
+            top: height * 0.06,
+            child: _PastelCouchPiece(
+              width: width * 0.78 * scale,
+              height: height * 0.34 * scale,
+              color: const Color(0xFFF5C6D6),
+              accentColor: const Color(0xFFFFF5F0),
+            ),
+          ),
+          Positioned(
+            left: width * 0.04,
+            top: height * 0.20,
+            child: _PastelArmchairPiece(
+              size: width * 0.30 * scale,
+              color: const Color(0xFFE8D4F0),
+              accentColor: const Color(0xFFFFF8FF),
+            ),
+          ),
+          Positioned(
+            left: width * 0.30,
+            top: height * 0.46,
+            child: _LoungeCoffeeTablePiece(
+              width: width * 0.40 * scale,
+              height: height * 0.20 * scale,
+            ),
+          ),
+          Positioned(
+            left: width * 0.38,
+            top: height * 0.40,
+            child: _PastelArmchairPiece(
+              size: width * 0.24 * scale,
+              color: const Color(0xFFF5D6A8),
+              accentColor: const Color(0xFFFFF8F0),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoungeAccentRug extends StatelessWidget {
+  const _LoungeAccentRug({required this.width, required this.height});
+
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFF5C6D6).withValues(alpha: 0.55),
+            const Color(0xFFE8D4F0).withValues(alpha: 0.55),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(height * 0.45),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.5),
+      ),
+    );
+  }
+}
+
+class _PastelCouchPiece extends StatelessWidget {
+  const _PastelCouchPiece({
+    required this.width,
+    required this.height,
+    required this.color,
+    required this.accentColor,
+  });
+
+  final double width;
+  final double height;
+  final Color color;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final armW = width * 0.14;
+    final seatH = height * 0.55;
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            top: height * 0.08,
+            child: _CouchArm(width: armW, height: seatH, color: color),
+          ),
+          Positioned(
+            right: 0,
+            top: height * 0.08,
+            child: _CouchArm(width: armW, height: seatH, color: color),
+          ),
+          Positioned(
+            left: armW * 0.65,
+            right: armW * 0.65,
+            top: height * 0.22,
+            child: Container(
+              height: seatH * 0.88,
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: BorderRadius.circular(seatH * 0.22),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.brown.withValues(alpha: 0.10),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: armW * 0.8,
+            right: armW * 0.8,
+            top: 0,
+            child: Container(
+              height: height * 0.28,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(height * 0.12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CouchArm extends StatelessWidget {
+  const _CouchArm({
+    required this.width,
+    required this.height,
+    required this.color,
+  });
+
+  final double width;
+  final double height;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(width * 0.45),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown.withValues(alpha: 0.08),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PastelArmchairPiece extends StatelessWidget {
+  const _PastelArmchairPiece({
+    required this.size,
+    required this.color,
+    required this.accentColor,
+  });
+
+  final double size;
+  final Color color;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size * 0.95,
+      child: Stack(
+        children: [
+          Positioned(
+            left: size * 0.08,
+            bottom: 0,
+            child: _CouchArm(
+              width: size * 0.18,
+              height: size * 0.55,
+              color: color,
+            ),
+          ),
+          Positioned(
+            right: size * 0.08,
+            bottom: 0,
+            child: _CouchArm(
+              width: size * 0.18,
+              height: size * 0.55,
+              color: color,
+            ),
+          ),
+          Positioned(
+            left: size * 0.18,
+            right: size * 0.18,
+            bottom: size * 0.08,
+            child: Container(
+              height: size * 0.42,
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: BorderRadius.circular(size * 0.14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
+              ),
+            ),
+          ),
+          Positioned(
+            left: size * 0.20,
+            right: size * 0.20,
+            top: 0,
+            child: Container(
+              height: size * 0.30,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(size * 0.12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoungeCoffeeTablePiece extends StatelessWidget {
+  const _LoungeCoffeeTablePiece({
+    required this.width,
+    required this.height,
+  });
+
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8C9A0),
+        borderRadius: BorderRadius.circular(height),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.7), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.brown.withValues(alpha: 0.10),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: Container(
+        width: width * 0.35,
+        height: height * 0.35,
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF8F0).withValues(alpha: 0.85),
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+}

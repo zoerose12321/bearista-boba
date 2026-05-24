@@ -28,6 +28,8 @@ class _RestaurantZones {
   static const customerArea = _Zone(0.38, 0.30, 0.54, 0.50);
   static const counter = _Zone(0.55, 0.02, 0.97, 0.42);
   static const signSlot = _Zone(0.58, 0.00, 0.96, 0.06);
+  /// Cozy pastel couch nook — right side below the counter.
+  static const loungeSlot = _Zone(0.60, 0.46, 0.96, 0.76);
   // Walk path — kept clear of furniture (entry → customer).
   static const walkPath = _Zone(0.22, 0.38, 0.58, 0.78);
 }
@@ -248,6 +250,20 @@ class CartoonShopScene extends StatelessWidget {
                   widthFactor: 0.95,
                   heightFactor: 0.95,
                 ),
+              _inZone(
+                _RestaurantZones.loungeSlot,
+                size,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return PastelLoungeGroup(
+                      width: constraints.maxWidth,
+                      height: constraints.maxHeight,
+                    );
+                  },
+                ),
+                widthFactor: 0.94,
+                heightFactor: 0.94,
+              ),
               Positioned(
                 left: customerRect.left + (customerRect.width - customerHalfW * 2) / 2,
                 top: customerRect.top + 2,
@@ -477,6 +493,7 @@ class _ZoneGuidePainter extends CustomPainter {
       _RestaurantZones.seatingB,
       _RestaurantZones.walkPath,
       _RestaurantZones.counter,
+      _RestaurantZones.loungeSlot,
     ]) {
       canvas.drawRect(
         Rect.fromLTWH(
