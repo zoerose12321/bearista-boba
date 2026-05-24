@@ -308,6 +308,7 @@ class TopDownTableSet extends StatelessWidget {
     this.stoolColor = const Color(0xFFE8A598),
     this.tableChild,
     this.extraStool,
+    this.stoolCount = 4,
   });
 
   final double tableWidth;
@@ -316,24 +317,32 @@ class TopDownTableSet extends StatelessWidget {
   final Color stoolColor;
   final Widget? tableChild;
   final Widget? extraStool;
+  final int stoolCount;
+
+  static double groupWidth(double tableWidth) => tableWidth * 1.45;
+  static double groupHeight(double tableHeight) => tableHeight * 1.55;
 
   @override
   Widget build(BuildContext context) {
-    final stoolSize = tableWidth * 0.28;
+    final stoolSize = tableWidth * 0.22;
 
     return SizedBox(
-      width: tableWidth * 1.6,
-      height: tableHeight * 1.8,
+      width: groupWidth(tableWidth),
+      height: groupHeight(tableHeight),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Positioned(top: 0, child: TopDownStool(size: stoolSize, color: stoolColor)),
-          Positioned(
-            bottom: 0,
-            child: extraStool ?? TopDownStool(size: stoolSize, color: stoolColor),
-          ),
-          Positioned(left: 0, child: TopDownStool(size: stoolSize * 0.9, color: stoolColor)),
-          Positioned(right: 0, child: TopDownStool(size: stoolSize * 0.9, color: stoolColor)),
+          if (stoolCount >= 1)
+            Positioned(top: 0, child: TopDownStool(size: stoolSize, color: stoolColor)),
+          if (stoolCount >= 2)
+            Positioned(
+              bottom: 0,
+              child: extraStool ?? TopDownStool(size: stoolSize, color: stoolColor),
+            ),
+          if (stoolCount >= 3)
+            Positioned(left: 0, child: TopDownStool(size: stoolSize * 0.85, color: stoolColor)),
+          if (stoolCount >= 4)
+            Positioned(right: 0, child: TopDownStool(size: stoolSize * 0.85, color: stoolColor)),
           TopDownOvalTable(
             width: tableWidth,
             height: tableHeight,
@@ -342,6 +351,50 @@ class TopDownTableSet extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Self-contained table + stools sized to fit a layout zone.
+class RestaurantTableGroup extends StatelessWidget {
+  const RestaurantTableGroup({
+    super.key,
+    required this.tableWidth,
+    required this.tableHeight,
+    this.tableColor = const Color(0xFFE0C9A8),
+    this.stoolColor = const Color(0xFFE8A598),
+    this.tableChild,
+    this.comfyChair = false,
+  });
+
+  final double tableWidth;
+  final double tableHeight;
+  final Color tableColor;
+  final Color stoolColor;
+  final Widget? tableChild;
+  final bool comfyChair;
+
+  @override
+  Widget build(BuildContext context) {
+    return TopDownTableSet(
+      tableWidth: tableWidth,
+      tableHeight: tableHeight,
+      tableColor: tableColor,
+      stoolColor: stoolColor,
+      tableChild: tableChild,
+      extraStool: comfyChair
+          ? Container(
+              width: tableWidth * 0.28,
+              height: tableWidth * 0.28,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8A598),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+              ),
+              alignment: Alignment.center,
+              child: Text('🪑', style: TextStyle(fontSize: tableWidth * 0.16)),
+            )
+          : null,
     );
   }
 }

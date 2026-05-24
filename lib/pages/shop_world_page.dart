@@ -28,8 +28,8 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
   static const _horizontalStep = 0.05;
   static const _verticalStep = 0.09;
 
-  static const _customerNormX = 0.50;
-  static const _customerNormY = 0.40;
+  static const _customerNormX = 0.55;
+  static const _customerNormY = 0.38;
   static const _talkRangeInSteps = 6.0;
 
   static const _minX = 0.06;
@@ -37,9 +37,9 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
   static const _minY = 0.06;
   static const _maxY = 0.88;
 
-  /// Clear of the bottom-left entry marker.
-  double _playerNormX = 0.28;
-  double _playerNormY = 0.62;
+  /// Walk-path start — clear of entry door, open floor toward counter.
+  double _playerNormX = 0.36;
+  double _playerNormY = 0.68;
 
   BearCustomer get _currentCustomer =>
       starterCustomers[widget.gameState.currentCustomerIndex];

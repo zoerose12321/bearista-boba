@@ -4,22 +4,32 @@ import '../models/bear_customer.dart';
 import '../models/player_character.dart';
 import 'shop_decoration.dart';
 
-/// Normalized layout anchors (0–1 within the walkable floor).
-class _SceneLayout {
-  static const plantNorm = Offset(0.10, 0.12);
-  static const table1Norm = Offset(0.20, 0.28);
-  static const table2Norm = Offset(0.26, 0.50);
-  static const table3Norm = Offset(0.34, 0.66);
-  static const cozyTableNorm = Offset(0.14, 0.42);
-  static const comfyChairNorm = Offset(0.40, 0.48);
-  static const rugNorm = Offset(0.30, 0.56);
+/// Fixed rectangular zones (normalized 0–1 within the restaurant floor).
+class _Zone {
+  const _Zone(this.left, this.top, this.right, this.bottom);
 
-  static const counterRightFrac = 0.05;
-  static const counterTopFrac = 0.07;
-  static const counterWidthFrac = 0.36;
-  static const counterHeightFrac = 0.13;
-  static const counterLegWidthFrac = 0.09;
-  static const counterLegHeightFrac = 0.20;
+  final double left;
+  final double top;
+  final double right;
+  final double bottom;
+
+  double get width => right - left;
+  double get height => bottom - top;
+  Offset get center => Offset((left + right) / 2, (top + bottom) / 2);
+}
+
+class _RestaurantZones {
+  static const entry = _Zone(0.04, 0.80, 0.22, 0.96);
+  static const plant = _Zone(0.04, 0.04, 0.17, 0.17);
+  static const seatingA = _Zone(0.08, 0.18, 0.34, 0.38);
+  static const seatingB = _Zone(0.08, 0.42, 0.34, 0.60);
+  static const cozyTableSlot = _Zone(0.08, 0.62, 0.34, 0.76);
+  static const rugSlot = _Zone(0.36, 0.52, 0.52, 0.68);
+  static const customerArea = _Zone(0.46, 0.30, 0.64, 0.46);
+  static const counter = _Zone(0.68, 0.06, 0.94, 0.28);
+  static const signSlot = _Zone(0.70, 0.02, 0.92, 0.08);
+  // Walk path — kept clear of furniture (entry → customer).
+  static const walkPath = _Zone(0.22, 0.38, 0.58, 0.78);
 }
 
 class CartoonShopScene extends StatelessWidget {
@@ -47,27 +57,45 @@ class CartoonShopScene extends StatelessWidget {
   bool _owns(String id) => ownedFurnitureIds.contains(id);
 
   bool get _playerBehindCounter =>
-      playerNormX >= 0.62 && playerNormY <= 0.22;
+      playerNormX >= 0.64 && playerNormY <= 0.22;
 
   Offset _normToScene(double normX, double normY, Size size) {
-    const floorLeft = 0.06;
-    const floorRight = 0.94;
-    const floorTop = 0.06;
-    const floorBottom = 0.94;
-
-    final x = size.width * (floorLeft + normX * (floorRight - floorLeft));
-    final y = size.height * (floorTop + normY * (floorBottom - floorTop));
-    return Offset(x, y);
+    const padL = 0.06;
+    const padR = 0.94;
+    const padT = 0.06;
+    const padB = 0.94;
+    return Offset(
+      size.width * (padL + normX * (padR - padL)),
+      size.height * (padT + normY * (padB - padT)),
+    );
   }
 
-  Offset _anchorTopLeft(
-    Offset norm,
-    Size sceneSize, {
-    required double width,
-    required double height,
+  Rect _zoneRect(_Zone zone, Size size) {
+    return Rect.fromLTWH(
+      size.width * zone.left,
+      size.height * zone.top,
+      size.width * zone.width,
+      size.height * zone.height,
+    );
+  }
+
+  Widget _inZone(
+    _Zone zone,
+    Size size,
+    Widget child, {
+    double widthFactor = 0.85,
+    double heightFactor = 0.85,
   }) {
-    final center = _normToScene(norm.dx, norm.dy, sceneSize);
-    return Offset(center.dx - width / 2, center.dy - height / 2);
+    final rect = _zoneRect(zone, size);
+    final w = rect.width * widthFactor;
+    final h = rect.height * heightFactor;
+    return Positioned(
+      left: rect.left + (rect.width - w) / 2,
+      top: rect.top + (rect.height - h) / 2,
+      width: w,
+      height: h,
+      child: Center(child: child),
+    );
   }
 
   @override
@@ -75,172 +103,97 @@ class CartoonShopScene extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
-        final tableW = size.width * 0.13;
-        final tableH = size.width * 0.085;
-
-        final counterRight = size.width * _SceneLayout.counterRightFrac;
-        final counterTop = size.height * _SceneLayout.counterTopFrac;
-        final counterWidth = size.width * _SceneLayout.counterWidthFrac;
-        final counterHeight = size.height * _SceneLayout.counterHeightFrac;
-        final counterLegWidth = size.width * _SceneLayout.counterLegWidthFrac;
-        final counterLegHeight = size.height * _SceneLayout.counterLegHeightFrac;
+        final tableW = (size.width * _RestaurantZones.seatingA.width * 0.45)
+            .clamp(40.0, 56.0);
+        final tableH = tableW * 0.65;
 
         final playerPos = _normToScene(playerNormX, playerNormY, size);
-        final customerAnchor = _anchorTopLeft(
-          Offset(customerNormX, customerNormY),
-          size,
-          width: 96,
-          height: 120,
-        );
+        final customerRect = _zoneRect(_RestaurantZones.customerArea, size);
 
         return ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: Stack(
             fit: StackFit.expand,
-            clipBehavior: Clip.none,
+            clipBehavior: Clip.hardEdge,
             children: [
               const _RestaurantRoom(),
+              CustomPaint(
+                painter: _ZoneGuidePainter(showGuides: false),
+                size: size,
+              ),
               if (_owns('pastel_rug'))
-                Positioned(
-                  left: _anchorTopLeft(
-                    _SceneLayout.rugNorm,
-                    size,
-                    width: size.width * 0.26,
-                    height: size.width * 0.17,
-                  ).dx,
-                  top: _anchorTopLeft(
-                    _SceneLayout.rugNorm,
-                    size,
-                    width: size.width * 0.26,
-                    height: size.width * 0.17,
-                  ).dy,
-                  child: TopDownRug(
-                    width: size.width * 0.26,
-                    height: size.width * 0.17,
+                _inZone(
+                  _RestaurantZones.rugSlot,
+                  size,
+                  TopDownRug(
+                    width: size.width * _RestaurantZones.rugSlot.width * 0.9,
+                    height: size.width * _RestaurantZones.rugSlot.width * 0.55,
                   ),
+                  widthFactor: 0.95,
+                  heightFactor: 0.95,
                 ),
-              _buildTableAt(_SceneLayout.table1Norm, size, tableW, tableH),
-              _buildTableAt(_SceneLayout.table2Norm, size, tableW * 0.95, tableH * 0.95,
-                  stoolColor: const Color(0xFFF5D6A8)),
-              _buildTableAt(
-                _SceneLayout.table3Norm,
+              _inZone(
+                _RestaurantZones.plant,
                 size,
-                tableW * 0.9,
-                tableH * 0.9,
-                tableColor: const Color(0xFFD4A574),
-                tableChild: const Text('☕', style: TextStyle(fontSize: 14)),
+                TopDownPlant(size: size.width * 0.075),
+              ),
+              _inZone(
+                _RestaurantZones.seatingA,
+                size,
+                RestaurantTableGroup(
+                  tableWidth: tableW,
+                  tableHeight: tableH,
+                ),
+              ),
+              _inZone(
+                _RestaurantZones.seatingB,
+                size,
+                RestaurantTableGroup(
+                  tableWidth: tableW,
+                  tableHeight: tableH,
+                  stoolColor: const Color(0xFFF5D6A8),
+                  comfyChair: _owns('comfy_chair'),
+                ),
               ),
               if (_owns('cozy_table'))
-                _buildTableAt(
-                  _SceneLayout.cozyTableNorm,
+                _inZone(
+                  _RestaurantZones.cozyTableSlot,
                   size,
-                  tableW,
-                  tableH,
-                  tableColor: const Color(0xFFD4A574),
-                  tableChild: const Text('🪵', style: TextStyle(fontSize: 16)),
-                ),
-              Positioned(
-                left: _anchorTopLeft(_SceneLayout.plantNorm, size,
-                        width: size.width * 0.09, height: size.width * 0.09)
-                    .dx,
-                top: _anchorTopLeft(_SceneLayout.plantNorm, size,
-                        width: size.width * 0.09, height: size.width * 0.09)
-                    .dy,
-                child: TopDownPlant(size: size.width * 0.09),
-              ),
-              Positioned(
-                left: size.width * 0.04,
-                bottom: size.height * 0.05,
-                child: TopDownDoor(width: size.width * 0.14),
-              ),
-              Positioned(
-                right: counterRight,
-                top: counterTop,
-                child: TopDownCounter(
-                  width: counterWidth,
-                  height: counterHeight,
-                ),
-              ),
-              Positioned(
-                right: counterRight,
-                top: counterTop,
-                child: Container(
-                  width: counterLegWidth,
-                  height: counterLegHeight,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0xFFE8C9A0), Color(0xFFD4A574)],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+                  RestaurantTableGroup(
+                    tableWidth: tableW,
+                    tableHeight: tableH,
+                    tableColor: const Color(0xFFD4A574),
+                    tableChild: const Text('🪵', style: TextStyle(fontSize: 14)),
                   ),
+                ),
+              _inZone(
+                _RestaurantZones.entry,
+                size,
+                FittedBox(
+                  fit: BoxFit.contain,
+                  child: TopDownDoor(width: 72),
+                ),
+                widthFactor: 0.85,
+                heightFactor: 0.9,
+              ),
+              _inZone(
+                _RestaurantZones.counter,
+                size,
+                _CounterCluster(
+                  showVase: _owns('flower_vase'),
                 ),
               ),
               if (_owns('boba_wall_sign'))
-                Positioned(
-                  top: size.height * 0.02,
-                  right: size.width * 0.08,
-                  child: const TopDownWallSign(),
+                _inZone(
+                  _RestaurantZones.signSlot,
+                  size,
+                  const TopDownWallSign(),
+                  widthFactor: 0.9,
+                  heightFactor: 0.9,
                 ),
               Positioned(
-                right: counterRight + counterLegWidth + 6,
-                top: counterTop - size.height * 0.02,
-                child: _CounterMenuBoard(),
-              ),
-              Positioned(
-                right: counterRight + counterLegWidth * 0.2,
-                top: counterTop + counterHeight + 10,
-                child: const TopDownRegister(),
-              ),
-              Positioned(
-                right: counterRight + counterWidth * 0.38,
-                top: counterTop + counterHeight * 0.28,
-                child: const Text('🧋', style: TextStyle(fontSize: 18)),
-              ),
-              if (_owns('flower_vase'))
-                Positioned(
-                  right: counterRight + counterWidth * 0.62,
-                  top: counterTop + counterHeight * 0.22,
-                  child: const Text('🌸', style: TextStyle(fontSize: 18)),
-                ),
-              if (_owns('comfy_chair'))
-                Positioned(
-                  left: _anchorTopLeft(
-                    _SceneLayout.comfyChairNorm,
-                    size,
-                    width: 36,
-                    height: 52,
-                  ).dx,
-                  top: _anchorTopLeft(
-                    _SceneLayout.comfyChairNorm,
-                    size,
-                    width: 36,
-                    height: 52,
-                  ).dy,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 26,
-                        height: 26,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8A598),
-                          borderRadius: BorderRadius.circular(9),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Text('🪑', style: TextStyle(fontSize: 13)),
-                      ),
-                      const SizedBox(height: 2),
-                      const TopDownStool(size: 16, color: Color(0xFFE8A598)),
-                    ],
-                  ),
-                ),
-              Positioned(
-                left: customerAnchor.dx,
-                top: customerAnchor.dy,
+                left: customerRect.left + (customerRect.width - 96) / 2,
+                top: customerRect.top + 4,
                 child: ShopCharacter(
                   furColor: customer.furColor,
                   accentColor: customer.accentColor,
@@ -250,14 +203,14 @@ class CartoonShopScene extends StatelessWidget {
                   sizeScale: customer.sizeScale,
                   nameLabel: customer.name,
                   speechText: playerNearCustomer ? 'Ready to order?' : null,
-                  size: 46,
+                  size: 44,
                 ),
               ),
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOut,
-                left: playerPos.dx - 44,
-                top: playerPos.dy - 72,
+                left: playerPos.dx - 42,
+                top: playerPos.dy - 68,
                 child: Opacity(
                   opacity: _playerBehindCounter ? 0.88 : 1.0,
                   child: ShopCharacter(
@@ -265,16 +218,18 @@ class CartoonShopScene extends StatelessWidget {
                     accentColor: player.accentColor,
                     accessory: player.accessory,
                     isPanda: player.isPanda,
-                    size: 42,
+                    size: 40,
                     isPlayer: true,
                   ),
                 ),
               ),
               if (_playerBehindCounter)
                 Positioned(
-                  right: counterRight + counterLegWidth + counterWidth * 0.52,
-                  top: counterTop,
-                  child: _CounterSideLip(height: counterHeight + counterLegHeight * 0.4),
+                  left: _zoneRect(_RestaurantZones.counter, size).left - 8,
+                  top: _zoneRect(_RestaurantZones.counter, size).top,
+                  child: _CounterSideLip(
+                    height: _zoneRect(_RestaurantZones.counter, size).height * 0.85,
+                  ),
                 ),
             ],
           ),
@@ -282,30 +237,70 @@ class CartoonShopScene extends StatelessWidget {
       },
     );
   }
+}
 
-  Widget _buildTableAt(
-    Offset norm,
-    Size sceneSize,
-    double tableW,
-    double tableH, {
-    Color tableColor = const Color(0xFFE0C9A8),
-    Color stoolColor = const Color(0xFFE8A598),
-    Widget? tableChild,
-  }) {
-    final tableSetW = tableW * 1.6;
-    final tableSetH = tableH * 1.8;
-    final pos = _anchorTopLeft(norm, sceneSize, width: tableSetW, height: tableSetH);
+class _CounterCluster extends StatelessWidget {
+  const _CounterCluster({required this.showVase});
 
-    return Positioned(
-      left: pos.dx,
-      top: pos.dy,
-      child: TopDownTableSet(
-        tableWidth: tableW,
-        tableHeight: tableH,
-        tableColor: tableColor,
-        stoolColor: stoolColor,
-        tableChild: tableChild,
-      ),
+  final bool showVase;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: w * 0.08,
+              top: h * 0.08,
+              right: 0,
+              child: TopDownCounter(width: w * 0.88, height: h * 0.42),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: w * 0.22,
+                height: h * 0.72,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFFE8C9A0), Color(0xFFD4A574)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              top: 0,
+              child: _CounterMenuBoard(),
+            ),
+            Positioned(
+              right: w * 0.02,
+              top: h * 0.48,
+              child: const TopDownRegister(),
+            ),
+            Positioned(
+              left: w * 0.42,
+              top: h * 0.22,
+              child: const Text('🧋', style: TextStyle(fontSize: 16)),
+            ),
+            if (showVase)
+              Positioned(
+                left: w * 0.62,
+                top: h * 0.18,
+                child: const Text('🌸', style: TextStyle(fontSize: 14)),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -318,23 +313,16 @@ class _CounterSideLip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 10,
+      width: 8,
       height: height,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [
-            const Color(0xFFC4956A),
-            const Color(0xFFB8845A).withValues(alpha: 0.9),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(5),
+        color: const Color(0xFFC4956A),
+        borderRadius: BorderRadius.circular(4),
         boxShadow: [
           BoxShadow(
-            color: Colors.brown.withValues(alpha: 0.15),
-            blurRadius: 4,
-            offset: const Offset(-2, 2),
+            color: Colors.brown.withValues(alpha: 0.12),
+            blurRadius: 3,
+            offset: const Offset(-1, 2),
           ),
         ],
       ),
@@ -346,23 +334,60 @@ class _CounterMenuBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 50,
-      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+      width: 44,
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       decoration: BoxDecoration(
         color: const Color(0xFF5C4A42),
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFFD4A574), width: 2),
       ),
       child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('MENU', style: TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)),
-          SizedBox(height: 2),
-          Text('🍵', style: TextStyle(fontSize: 11)),
+          Text('MENU', style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
+          Text('🍵', style: TextStyle(fontSize: 10)),
         ],
       ),
     );
   }
+}
+
+class _ZoneGuidePainter extends CustomPainter {
+  _ZoneGuidePainter({required this.showGuides});
+
+  final bool showGuides;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (!showGuides) {
+      return;
+    }
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = Colors.red.withValues(alpha: 0.2);
+    for (final zone in [
+      _RestaurantZones.entry,
+      _RestaurantZones.plant,
+      _RestaurantZones.seatingA,
+      _RestaurantZones.seatingB,
+      _RestaurantZones.walkPath,
+      _RestaurantZones.counter,
+    ]) {
+      canvas.drawRect(
+        Rect.fromLTWH(
+          size.width * zone.left,
+          size.height * zone.top,
+          size.width * zone.width,
+          size.height * zone.height,
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ZoneGuidePainter oldDelegate) => false;
 }
 
 class _RestaurantRoom extends StatelessWidget {
@@ -373,8 +398,8 @@ class _RestaurantRoom extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: RadialGradient(
-          center: const Alignment(0.2, 0.4),
-          radius: 1.15,
+          center: const Alignment(0.15, 0.45),
+          radius: 1.1,
           colors: [
             const Color(0xFFFFF8F0),
             const Color(0xFFF5E6D3),
@@ -386,13 +411,6 @@ class _RestaurantRoom extends StatelessWidget {
           width: 3,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.brown.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(21),
@@ -409,11 +427,11 @@ class _FloorTilePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.07)
+      ..color = Colors.white.withValues(alpha: 0.06)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
-    const spacing = 40.0;
+    const spacing = 44.0;
     for (var x = spacing; x < size.width; x += spacing) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
