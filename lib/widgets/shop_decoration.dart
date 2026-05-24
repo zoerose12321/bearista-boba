@@ -285,16 +285,20 @@ class RestaurantSceneScale {
   static const upgrade = 1.62;
   /// Register, menu board, and counter emoji readability boost (v0.1.12+).
   static const detail = 1.38;
-  /// Extra detail scale for the enlarged service counter (v0.1.13).
+  /// Counter-top prop font/detail boost (v0.1.13).
   static const counterDetail = 1.78;
+  /// Frozen v0.1.13 effective scale for items on the counter (body scale excluded).
+  static const counterTopItemScale = counter * counterDetail;
+  /// Additional enlargement for counter body/work surface only (v0.1.14).
+  static const counterBodyBoost = 1.32;
   static const zoneFill = 0.96;
 
   static const playerBearSize = 68.0;
   static const customerBearSize = 74.0;
 
   /// Normalized coords for behind-counter movement and visibility.
-  static const behindCounterMinX = 0.58;
-  static const behindCounterMaxY = 0.30;
+  static const behindCounterMinX = 0.55;
+  static const behindCounterMaxY = 0.32;
 
   /// Minimum readable label size after scene downscaling.
   static const minLabelFontSize = 10.0;

@@ -28,7 +28,7 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
   static const _horizontalStep = 0.05;
   static const _verticalStep = 0.09;
 
-  static const _customerNormX = 0.48;
+  static const _customerNormX = 0.46;
   static const _customerNormY = 0.42;
   static const _talkRangeInSteps = 6.0;
 
