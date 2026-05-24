@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../widgets/music_toggle_button.dart';
+
 import '../models/player_character.dart';
 import 'cute_bear_avatar.dart';
 
@@ -358,6 +360,7 @@ class ShopWorldHeader extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           ),
+          const MusicToggleButton(),
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: Container(
