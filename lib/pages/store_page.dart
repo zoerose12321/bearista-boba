@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
+import '../models/store_item.dart';
 import '../widgets/cute_bear_avatar.dart';
+import 'store_category_page.dart';
 
-class StorePage extends StatelessWidget {
+class StorePage extends StatefulWidget {
   const StorePage({
     super.key,
     required this.player,
@@ -13,6 +15,25 @@ class StorePage extends StatelessWidget {
 
   final PlayerCharacter player;
   final ShopGameState gameState;
+
+  @override
+  State<StorePage> createState() => _StorePageState();
+}
+
+class _StorePageState extends State<StorePage> {
+  Future<void> _openCategory(StoreCategory category) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => StoreCategoryPage(
+          category: category,
+          gameState: widget.gameState,
+        ),
+      ),
+    );
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +72,7 @@ class StorePage extends StatelessWidget {
                     child: Row(
                       children: [
                         Text(
-                          '🪙 ${gameState.coins}',
+                          '🪙 ${widget.gameState.coins}',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
@@ -59,7 +80,7 @@ class StorePage extends StatelessWidget {
                         ),
                         const Spacer(),
                         Text(
-                          'Welcome, ${player.displayName}!',
+                          'Welcome, ${widget.player.displayName}!',
                           style: theme.textTheme.titleSmall?.copyWith(
                             color: theme.colorScheme.onSurface
                                 .withValues(alpha: 0.7),
@@ -71,7 +92,7 @@ class StorePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 _StoreFloor(
-                  player: player,
+                  player: widget.player,
                   theme: theme,
                 ),
                 const SizedBox(height: 20),
@@ -86,45 +107,45 @@ class StorePage extends StatelessWidget {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final isWide = constraints.maxWidth >= 520;
+                    final cardWidth = isWide
+                        ? (constraints.maxWidth - 12) / 2
+                        : constraints.maxWidth;
+
                     return Wrap(
                       spacing: 12,
                       runSpacing: 12,
                       children: [
-                        _StorePlaceholderSection(
-                          width: isWide
-                              ? (constraints.maxWidth - 12) / 2
-                              : constraints.maxWidth,
+                        _StoreCategoryCard(
+                          width: cardWidth,
                           emoji: '👗',
-                          title: 'Outfit Rack',
-                          message: 'Outfits coming soon',
+                          title: StoreCategory.outfits.title,
+                          description: StoreCategory.outfits.description,
                           accent: const Color(0xFFF5A8C8),
+                          onTap: () => _openCategory(StoreCategory.outfits),
                         ),
-                        _StorePlaceholderSection(
-                          width: isWide
-                              ? (constraints.maxWidth - 12) / 2
-                              : constraints.maxWidth,
+                        _StoreCategoryCard(
+                          width: cardWidth,
                           emoji: '🎀',
-                          title: 'Accessory Shelf',
-                          message: 'Accessories coming soon',
+                          title: StoreCategory.accessories.title,
+                          description: StoreCategory.accessories.description,
                           accent: const Color(0xFFC9B8E8),
+                          onTap: () => _openCategory(StoreCategory.accessories),
                         ),
-                        _StorePlaceholderSection(
-                          width: isWide
-                              ? (constraints.maxWidth - 12) / 2
-                              : constraints.maxWidth,
+                        _StoreCategoryCard(
+                          width: cardWidth,
                           emoji: '🪑',
-                          title: 'Furniture Display',
-                          message: 'Furniture coming soon',
+                          title: StoreCategory.furniture.title,
+                          description: StoreCategory.furniture.description,
                           accent: const Color(0xFFB8D4A8),
+                          onTap: () => _openCategory(StoreCategory.furniture),
                         ),
-                        _StorePlaceholderSection(
-                          width: isWide
-                              ? (constraints.maxWidth - 12) / 2
-                              : constraints.maxWidth,
-                          emoji: '🛒',
-                          title: 'Checkout Counter',
-                          message: 'Purchases coming soon',
+                        _StoreCategoryCard(
+                          width: cardWidth,
+                          emoji: '🍵',
+                          title: StoreCategory.ingredients.title,
+                          description: StoreCategory.ingredients.description,
                           accent: const Color(0xFFF5D6A8),
+                          onTap: () => _openCategory(StoreCategory.ingredients),
                         ),
                       ],
                     );
@@ -328,20 +349,22 @@ class _ShelfDecor extends StatelessWidget {
   }
 }
 
-class _StorePlaceholderSection extends StatelessWidget {
-  const _StorePlaceholderSection({
+class _StoreCategoryCard extends StatelessWidget {
+  const _StoreCategoryCard({
     required this.width,
     required this.emoji,
     required this.title,
-    required this.message,
+    required this.description,
     required this.accent,
+    required this.onTap,
   });
 
   final double width;
   final String emoji;
   final String title;
-  final String message;
+  final String description;
   final Color accent;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -350,44 +373,52 @@ class _StorePlaceholderSection extends StatelessWidget {
     return SizedBox(
       width: width,
       child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.45),
-                  borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Center(
+                    child: Text(emoji, style: const TextStyle(fontSize: 26)),
+                  ),
                 ),
-                child: Center(
-                  child: Text(emoji, style: const TextStyle(fontSize: 26)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      message,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.65),
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.65),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                ),
+              ],
+            ),
           ),
         ),
       ),
