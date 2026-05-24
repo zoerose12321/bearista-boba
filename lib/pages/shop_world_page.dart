@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/starter_customers.dart';
-import '../models/bear_customer.dart';
+import '../models/active_customer_visit.dart';
 import '../models/customer_visit_state.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
@@ -28,50 +28,130 @@ class ShopWorldPage extends StatefulWidget {
 }
 
 class _ShopWorldPageState extends State<ShopWorldPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
+  static const _slotCount = 3;
   static const _horizontalStep = 0.05;
   static const _verticalStep = 0.09;
-
   static const _talkRangeInSteps = 6.0;
-
   static const _enterPause = Duration(milliseconds: 400);
   static const _walkDuration = Duration(milliseconds: 1200);
+  static const _enterStagger = <Duration>[
+    Duration.zero,
+    Duration(milliseconds: 550),
+    Duration(milliseconds: 1000),
+  ];
 
   static const _minX = RestaurantSceneScale.moveMinX;
   static const _maxX = RestaurantSceneScale.moveMaxX;
   static const _minY = RestaurantSceneScale.moveMinY;
   static const _maxY = RestaurantSceneScale.moveMaxY;
 
-  /// Walk-path start — clear of entry door, open floor toward counter.
   double _playerNormX = 0.36;
   double _playerNormY = 0.68;
 
-  CustomerVisitPhase _visitPhase = CustomerVisitPhase.entering;
-  int _activeVisitIndex = -1;
-  int _visitGeneration = 0;
-  CustomerSeatingSpot _targetSeat = CustomerSeatingSpot.tableSeatOne;
+  late List<ActiveCustomerVisit> _visits;
+  late List<AnimationController> _walkControllers;
+  late List<int> _slotGenerations;
 
-  late AnimationController _walkController;
+  int _nextReplacementIndex = _slotCount;
 
-  BearCustomer get _currentCustomer =>
-      starterCustomers[widget.gameState.currentCustomerIndex];
+  /// Walk-path start — clear of entry door, open floor toward counter.
+  Listenable get _allWalkAnimations =>
+      Listenable.merge(_walkControllers);
 
-  Offset get _customerPosition {
-    if (_visitPhase == CustomerVisitPhase.entering) {
+  @override
+  void initState() {
+    super.initState();
+    _walkControllers = List.generate(
+      _slotCount,
+      (_) => AnimationController(vsync: this, duration: _walkDuration),
+    );
+    _slotGenerations = List.filled(_slotCount, 0);
+    _visits = List.generate(_slotCount, (slotIndex) {
+      return ActiveCustomerVisit(
+        slotIndex: slotIndex,
+        customerIndex: slotIndex,
+        seat: CustomerSeatingSpot.forSlotIndex(slotIndex),
+      );
+    });
+
+    for (var slot = 0; slot < _slotCount; slot++) {
+      final slotIndex = slot;
+      _walkControllers[slotIndex].addStatusListener(
+        (status) => _onWalkStatus(slotIndex, status),
+      );
+      _scheduleVisitStart(slotIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _walkControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _scheduleVisitStart(int slotIndex) {
+    _slotGenerations[slotIndex]++;
+    final generation = _slotGenerations[slotIndex];
+    final visit = _visits[slotIndex];
+
+    _walkControllers[slotIndex].stop();
+    _walkControllers[slotIndex].reset();
+    visit.phase = CustomerVisitPhase.waitingToEnter;
+
+    Future<void>.delayed(_enterStagger[slotIndex], () {
+      if (!mounted || generation != _slotGenerations[slotIndex]) {
+        return;
+      }
+      setState(() {
+        visit.phase = CustomerVisitPhase.entering;
+      });
+
+      Future<void>.delayed(_enterPause, () {
+        if (!mounted || generation != _slotGenerations[slotIndex]) {
+          return;
+        }
+        setState(() {
+          visit.phase = CustomerVisitPhase.walkingToSeat;
+        });
+        _walkControllers[slotIndex].forward(from: 0);
+      });
+    });
+  }
+
+  void _onWalkStatus(int slotIndex, AnimationStatus status) {
+    if (status != AnimationStatus.completed || !mounted) {
+      return;
+    }
+    setState(() {
+      _visits[slotIndex].phase = CustomerVisitPhase.seatedReadyToOrder;
+    });
+  }
+
+  Offset _positionForVisit(ActiveCustomerVisit visit) {
+    if (visit.phase == CustomerVisitPhase.waitingToEnter) {
       return const Offset(
         CustomerSeatingSpot.entryNormX,
         CustomerSeatingSpot.entryNormY,
       );
     }
-    if (_visitPhase == CustomerVisitPhase.seatedReadyToOrder) {
-      return Offset(_targetSeat.normX, _targetSeat.normY);
+    if (visit.phase == CustomerVisitPhase.entering) {
+      return const Offset(
+        CustomerSeatingSpot.entryNormX,
+        CustomerSeatingSpot.entryNormY,
+      );
+    }
+    if (visit.phase == CustomerVisitPhase.seatedReadyToOrder) {
+      return Offset(visit.seat.normX, visit.seat.normY);
     }
 
-    final t = _walkController.value;
+    final t = _walkControllers[visit.slotIndex].value;
     const midX = CustomerSeatingSpot.midAisleNormX;
     const midY = CustomerSeatingSpot.midAisleNormY;
-    final seatX = _targetSeat.normX;
-    final seatY = _targetSeat.normY;
+    final seatX = visit.seat.normX;
+    final seatY = visit.seat.normY;
 
     if (t <= 0.5) {
       final seg = t * 2;
@@ -88,68 +168,63 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     );
   }
 
-  bool _isNearCustomerAt(double normX, double normY) {
+  double _distanceInSteps(double normX, double normY) {
     final dx = (_playerNormX - normX).abs();
     final dy = (_playerNormY - normY).abs();
-    final distanceInSteps = dx / _horizontalStep + dy / _verticalStep;
-    return distanceInSteps <= _talkRangeInSteps;
+    return dx / _horizontalStep + dy / _verticalStep;
   }
 
-  bool get _customerIsSeated =>
-      _visitPhase == CustomerVisitPhase.seatedReadyToOrder;
-
-  @override
-  void initState() {
-    super.initState();
-    _walkController = AnimationController(vsync: this, duration: _walkDuration)
-      ..addStatusListener(_onWalkStatus);
-    _startVisit();
+  bool _isNear(double normX, double normY) {
+    return _distanceInSteps(normX, normY) <= _talkRangeInSteps;
   }
 
-  @override
-  void dispose() {
-    _walkController.dispose();
-    super.dispose();
-  }
+  ActiveCustomerVisit? _nearestTalkTarget() {
+    ActiveCustomerVisit? nearest;
+    var bestDistance = double.infinity;
 
-  void _startVisit() {
-    _visitGeneration++;
-    final generation = _visitGeneration;
-
-    _walkController.stop();
-    _walkController.reset();
-
-    final index = widget.gameState.currentCustomerIndex;
-    _activeVisitIndex = index;
-    _targetSeat = CustomerSeatingSpot.forCustomerIndex(index);
-    _visitPhase = CustomerVisitPhase.entering;
-
-    Future<void>.delayed(_enterPause, () {
-      if (!mounted || generation != _visitGeneration) {
-        return;
+    for (final visit in _visits) {
+      if (!visit.canTalk) {
+        continue;
       }
-      setState(() {
-        _visitPhase = CustomerVisitPhase.walkingToSeat;
-      });
-      _walkController.forward(from: 0);
-    });
+
+      final pos = _positionForVisit(visit);
+      final distance = _distanceInSteps(pos.dx, pos.dy);
+      if (distance > _talkRangeInSteps || distance >= bestDistance) {
+        continue;
+      }
+
+      bestDistance = distance;
+      nearest = visit;
+    }
+
+    return nearest;
   }
 
-  void _syncVisitIfNeeded() {
-    if (_activeVisitIndex != widget.gameState.currentCustomerIndex) {
-      setState(() {
-        _startVisit();
-      });
-    }
+  List<SceneCustomerDisplay> _sceneCustomers(ActiveCustomerVisit? talkTarget) {
+    return _visits
+        .where((visit) => visit.phase != CustomerVisitPhase.waitingToEnter)
+        .map((visit) {
+          final pos = _positionForVisit(visit);
+          final isTarget = identical(visit, talkTarget);
+          return SceneCustomerDisplay(
+            normX: pos.dx,
+            normY: pos.dy,
+            phase: visit.phase,
+            customer: visit.customer,
+            isSeated: visit.isSeated,
+            showSpeechPrompt: isTarget && visit.canTalk,
+          );
+        })
+        .toList();
   }
 
-  void _onWalkStatus(AnimationStatus status) {
-    if (status != AnimationStatus.completed || !mounted) {
-      return;
-    }
-    setState(() {
-      _visitPhase = CustomerVisitPhase.seatedReadyToOrder;
-    });
+  void _replaceVisit(int slotIndex) {
+    final visit = _visits[slotIndex];
+    visit.customerIndex =
+        _nextReplacementIndex % starterCustomers.length;
+    _nextReplacementIndex++;
+    visit.orderCompleted = false;
+    _scheduleVisitStart(slotIndex);
   }
 
   void _move(int deltaCol, int deltaRow) {
@@ -188,16 +263,26 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     }
   }
 
-  Future<void> _openBearistaShop() async {
+  Future<void> _openBearistaShop(ActiveCustomerVisit visit) async {
+    final completedBefore = visit.orderCompleted;
+
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (context) => BearistaShopPage(
           player: widget.player,
           gameState: widget.gameState,
+          customer: visit.customer,
+          orderCompleted: visit.orderCompleted,
+          onOrderCompleted: () {
+            visit.orderCompleted = true;
+          },
         ),
       ),
     );
-    _syncVisitIfNeeded();
+
+    if (visit.orderCompleted && !completedBefore) {
+      _replaceVisit(visit.slotIndex);
+    }
     setState(() {});
   }
 
@@ -210,11 +295,25 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     setState(() {});
   }
 
-  String get _talkHint {
-    if (_visitPhase != CustomerVisitPhase.seatedReadyToOrder) {
-      return 'Wait for ${_currentCustomer.name} to find a seat…';
+  String _talkHint(ActiveCustomerVisit? talkTarget) {
+    final anyStillWalking = _visits.any(
+      (visit) =>
+          visit.phase == CustomerVisitPhase.entering ||
+          visit.phase == CustomerVisitPhase.walkingToSeat ||
+          visit.phase == CustomerVisitPhase.waitingToEnter,
+    );
+    final anySeatedReady = _visits.any((visit) => visit.canTalk);
+
+    if (talkTarget != null) {
+      return 'Walk closer to ${talkTarget.customer.name} to talk';
     }
-    return 'Walk closer to ${_currentCustomer.name} to talk';
+    if (anyStillWalking && !anySeatedReady) {
+      return 'Wait for customers to find their seats…';
+    }
+    if (anySeatedReady) {
+      return 'Walk closer to a seated customer to talk';
+    }
+    return 'Wait for customers to find their seats…';
   }
 
   @override
@@ -247,32 +346,17 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                     const SizedBox(height: 8),
                     Expanded(
                       child: AnimatedBuilder(
-                        animation: _walkController,
+                        animation: _allWalkAnimations,
                         builder: (context, child) {
-                          final customerPos = _customerPosition;
-                          final canTalk = _visitPhase ==
-                                  CustomerVisitPhase.seatedReadyToOrder &&
-                              _isNearCustomerAt(
-                                customerPos.dx,
-                                customerPos.dy,
-                              );
-
+                          final talkTarget = _nearestTalkTarget();
                           return ShopSceneViewport(
                             child: CartoonShopScene(
                               playerNormX: _playerNormX,
                               playerNormY: _playerNormY,
-                              customerNormX: customerPos.dx,
-                              customerNormY: customerPos.dy,
-                              customerVisitPhase: _visitPhase,
-                              customerIsSeated: _customerIsSeated,
+                              customers: _sceneCustomers(talkTarget),
                               player: widget.player,
-                              customer: _currentCustomer,
                               ownedFurnitureIds:
                                   widget.gameState.ownedFurnitureIds,
-                              playerNearCustomer: _isNearCustomerAt(
-                                customerPos.dx,
-                                customerPos.dy,
-                              ),
                             ),
                           );
                         },
@@ -280,12 +364,14 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                     ),
                     const SizedBox(height: 12),
                     AnimatedBuilder(
-                      animation: _walkController,
+                      animation: _allWalkAnimations,
                       builder: (context, child) {
-                        final customerPos = _customerPosition;
-                        final canTalk = _visitPhase ==
-                                CustomerVisitPhase.seatedReadyToOrder &&
-                            _isNearCustomerAt(customerPos.dx, customerPos.dy);
+                        final talkTarget = _nearestTalkTarget();
+                        final canTalk = talkTarget != null &&
+                            _isNear(
+                              _positionForVisit(talkTarget).dx,
+                              _positionForVisit(talkTarget).dy,
+                            );
 
                         return Center(
                           child: ConstrainedBox(
@@ -302,7 +388,8 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                     Expanded(
                                       child: canTalk
                                           ? FilledButton.icon(
-                                              onPressed: _openBearistaShop,
+                                              onPressed: () =>
+                                                  _openBearistaShop(talkTarget),
                                               icon: const Icon(
                                                 Icons.chat_bubble_outline,
                                               ),
@@ -331,7 +418,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                 if (!canTalk) ...[
                                   const SizedBox(height: 8),
                                   Text(
-                                    _talkHint,
+                                    _talkHint(talkTarget),
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.6),

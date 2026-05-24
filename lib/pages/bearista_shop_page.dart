@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../data/starter_customers.dart';
 import '../models/bear_customer.dart';
 import '../models/player_character.dart';
 import '../models/drink_order.dart';
@@ -13,10 +12,16 @@ class BearistaShopPage extends StatefulWidget {
     super.key,
     required this.player,
     required this.gameState,
+    required this.customer,
+    this.orderCompleted = false,
+    this.onOrderCompleted,
   });
 
   final PlayerCharacter player;
   final ShopGameState gameState;
+  final BearCustomer customer;
+  final bool orderCompleted;
+  final VoidCallback? onOrderCompleted;
 
   @override
   State<BearistaShopPage> createState() => _BearistaShopPageState();
@@ -35,14 +40,21 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
 
   final List<String> _selectedIngredients = [];
   String? _message;
+  late bool _orderCompleted;
 
-  BearCustomer get _customer => starterCustomers[widget.gameState.currentCustomerIndex];
+  BearCustomer get _customer => widget.customer;
 
   DrinkOrder get _selectedDrink =>
       DrinkOrder(ingredients: List.from(_selectedIngredients));
 
+  @override
+  void initState() {
+    super.initState();
+    _orderCompleted = widget.orderCompleted;
+  }
+
   void _toggleIngredient(String ingredient) {
-    if (widget.gameState.orderCompleted) {
+    if (_orderCompleted) {
       return;
     }
 
@@ -64,7 +76,7 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
   }
 
   void _serveDrink() {
-    if (widget.gameState.orderCompleted) {
+    if (_orderCompleted) {
       return;
     }
 
@@ -78,24 +90,17 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
     if (_selectedDrink.matches(_customer.order)) {
       setState(() {
         widget.gameState.coins += 10;
-        widget.gameState.orderCompleted = true;
+        _orderCompleted = true;
         _message = _customer.happyMessage;
         _selectedIngredients.clear();
       });
+      widget.onOrderCompleted?.call();
       SoundEffectsService.instance.playCoinDing();
     } else {
       setState(() {
         _message = _customer.hintMessage;
       });
     }
-  }
-
-  void _nextCustomer() {
-    setState(() {
-      widget.gameState.advanceCustomer(starterCustomers.length);
-      _selectedIngredients.clear();
-      _message = null;
-    });
   }
 
   @override
@@ -204,7 +209,7 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
                 return FilterChip(
                   label: Text(ingredient),
                   selected: isSelected,
-                  onSelected: widget.gameState.orderCompleted
+                  onSelected: _orderCompleted
                       ? null
                       : (_) => _toggleIngredient(ingredient),
                   showCheckmark: false,
@@ -259,7 +264,7 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
-                    onPressed: widget.gameState.orderCompleted ? null : _serveDrink,
+                    onPressed: _orderCompleted ? null : _serveDrink,
                     child: const Padding(
                       padding: EdgeInsets.symmetric(vertical: 4),
                       child: Text('Serve Drink'),
@@ -268,13 +273,13 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
                 ),
               ],
             ),
-            if (widget.gameState.orderCompleted) ...[
+            if (_orderCompleted) ...[
               const SizedBox(height: 12),
               FilledButton(
-                onPressed: _nextCustomer,
+                onPressed: () => Navigator.of(context).pop(),
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 4),
-                  child: Text('Next Customer'),
+                  child: Text('Back to Shop'),
                 ),
               ),
             ],

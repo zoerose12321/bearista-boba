@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/bear_customer.dart';
+import '../models/active_customer_visit.dart';
 import '../models/customer_visit_state.dart';
 import '../models/player_character.dart';
 import 'shop_decoration.dart';
@@ -73,26 +73,16 @@ class CartoonShopScene extends StatelessWidget {
     super.key,
     required this.playerNormX,
     required this.playerNormY,
-    required this.customerNormX,
-    required this.customerNormY,
-    required this.customerVisitPhase,
-    required this.customerIsSeated,
+    required this.customers,
     required this.player,
-    required this.customer,
     required this.ownedFurnitureIds,
-    required this.playerNearCustomer,
   });
 
   final double playerNormX;
   final double playerNormY;
-  final double customerNormX;
-  final double customerNormY;
-  final CustomerVisitPhase customerVisitPhase;
-  final bool customerIsSeated;
+  final List<SceneCustomerDisplay> customers;
   final PlayerCharacter player;
-  final BearCustomer customer;
   final Set<String> ownedFurnitureIds;
-  final bool playerNearCustomer;
 
   bool _owns(String id) => ownedFurnitureIds.contains(id);
 
@@ -153,9 +143,6 @@ class CartoonShopScene extends StatelessWidget {
     final customerHalfW = RestaurantSceneScale.customerBearSize * 0.95;
 
     final playerPos = _normToScene(playerNormX, playerNormY, size);
-    final customerPos = _normToScene(customerNormX, customerNormY, size);
-    final customerOffsetY = RestaurantSceneScale.customerBearSize *
-        (customerIsSeated ? 1.45 : 1.55);
 
     return ClipRRect(
           borderRadius: BorderRadius.circular(24),
@@ -270,30 +257,37 @@ class CartoonShopScene extends StatelessWidget {
                 widthFactor: 0.94,
                 heightFactor: 0.94,
               ),
-              Positioned(
-                left: customerPos.dx - customerHalfW,
-                top: customerPos.dy - customerOffsetY,
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 200),
-                  opacity: customerVisitPhase == CustomerVisitPhase.entering
-                      ? 0.92
-                      : 1.0,
-                  child: ShopCharacter(
-                    furColor: customer.furColor,
-                    accentColor: customer.accentColor,
-                    muzzleColor: customer.muzzleColor,
-                    accessory: customer.accessory,
-                    isPanda: customer.isPanda,
-                    sizeScale: customer.sizeScale,
-                    nameLabel: customer.name,
-                    speechText: customerIsSeated && playerNearCustomer
-                        ? 'Ready to order?'
-                        : null,
-                    size: RestaurantSceneScale.customerBearSize,
-                    isSeated: customerIsSeated,
+              ...customers.map((display) {
+                final customerPos =
+                    _normToScene(display.normX, display.normY, size);
+                final customerOffsetY = RestaurantSceneScale.customerBearSize *
+                    (display.isSeated ? 1.45 : 1.55);
+
+                return Positioned(
+                  left: customerPos.dx - customerHalfW,
+                  top: customerPos.dy - customerOffsetY,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: display.phase == CustomerVisitPhase.entering
+                        ? 0.92
+                        : 1.0,
+                    child: ShopCharacter(
+                      furColor: display.customer.furColor,
+                      accentColor: display.customer.accentColor,
+                      muzzleColor: display.customer.muzzleColor,
+                      accessory: display.customer.accessory,
+                      isPanda: display.customer.isPanda,
+                      sizeScale: display.customer.sizeScale,
+                      nameLabel: display.customer.name,
+                      speechText: display.showSpeechPrompt
+                          ? 'Ready to order?'
+                          : null,
+                      size: RestaurantSceneScale.customerBearSize,
+                      isSeated: display.isSeated,
+                    ),
                   ),
-                ),
-              ),
+                );
+              }),
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOut,

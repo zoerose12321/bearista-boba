@@ -20,15 +20,15 @@ Future<void> _createCharacterAndEnterShop(
   await tester.pumpAndSettle();
 }
 
-Future<void> _waitForCustomerSeated(WidgetTester tester) async {
-  await tester.pump(const Duration(milliseconds: 1800));
+Future<void> _waitForCustomersSeated(WidgetTester tester) async {
+  await tester.pump(const Duration(milliseconds: 2800));
   await tester.pump(const Duration(milliseconds: 200));
 }
 
-Future<void> _walkToCustomer(WidgetTester tester) async {
-  await _waitForCustomerSeated(tester);
+Future<void> _walkToHoneyBear(WidgetTester tester) async {
+  await _waitForCustomersSeated(tester);
 
-  // Honey Bear (index 0) sits at table seat 1 (~0.24, 0.30).
+  // Honey Bear sits at table seat 1 (~0.24, 0.30).
   for (var i = 0; i < 5; i++) {
     await tester.tap(find.byIcon(Icons.keyboard_arrow_up_rounded));
     await tester.pump(const Duration(milliseconds: 180));
@@ -39,9 +39,31 @@ Future<void> _walkToCustomer(WidgetTester tester) async {
   }
 }
 
-Future<void> _openBearistaShop(WidgetTester tester) async {
+Future<void> _walkToPandaBear(WidgetTester tester) async {
+  await _waitForCustomersSeated(tester);
+
+  // Panda Bear sits at table seat 2 (~0.24, 0.50) from default spawn.
+  for (var i = 0; i < 2; i++) {
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_up_rounded));
+    await tester.pump(const Duration(milliseconds: 180));
+  }
+  for (var i = 0; i < 3; i++) {
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_left_rounded));
+    await tester.pump(const Duration(milliseconds: 180));
+  }
+}
+
+Future<void> _walkToPandaFromTableOne(WidgetTester tester) async {
+  // After visiting Honey Bear at table 1, walk down to Panda at table 2.
+  for (var i = 0; i < 3; i++) {
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded));
+    await tester.pump(const Duration(milliseconds: 180));
+  }
+}
+
+Future<void> _openBearistaShopForHoney(WidgetTester tester) async {
   await _createCharacterAndEnterShop(tester);
-  await _walkToCustomer(tester);
+  await _walkToHoneyBear(tester);
   await tester.tap(find.text('Talk'));
   await tester.pumpAndSettle();
 }
@@ -80,8 +102,10 @@ void main() {
     expect(find.text('Talk'), findsOneWidget);
     expect(find.text('Shop Upgrades'), findsOneWidget);
     expect(find.text('Honey Bear'), findsOneWidget);
+    expect(find.text('Panda Bear'), findsOneWidget);
+    expect(find.text('Baby Bear'), findsOneWidget);
 
-    await _walkToCustomer(tester);
+    await _walkToHoneyBear(tester);
     await tester.tap(find.text('Talk'));
     await tester.pumpAndSettle();
 
@@ -91,7 +115,7 @@ void main() {
 
   testWidgets('Correct drink awards coins once per order', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
-    await _openBearistaShop(tester);
+    await _openBearistaShopForHoney(tester);
 
     expect(find.text('🪙 0'), findsOneWidget);
 
@@ -99,7 +123,7 @@ void main() {
 
     expect(find.text('🪙 10'), findsOneWidget);
     expect(find.textContaining('Perfect! Honey Bear loves it!'), findsOneWidget);
-    expect(find.text('Next Customer'), findsOneWidget);
+    expect(find.text('Back to Shop'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Serve Drink'));
     await tester.tap(find.text('Serve Drink'));
@@ -108,15 +132,12 @@ void main() {
     expect(find.text('🪙 10'), findsOneWidget);
   });
 
-  testWidgets('Next customer rotates order', (WidgetTester tester) async {
+  testWidgets('Talk opens selected customer order', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
-    await _openBearistaShop(tester);
-
-    await _serveHoneyBearOrder(tester);
-
-    await tester.ensureVisible(find.text('Next Customer'));
-    await tester.tap(find.text('Next Customer'));
-    await tester.pump();
+    await _createCharacterAndEnterShop(tester);
+    await _walkToPandaBear(tester);
+    await tester.tap(find.text('Talk'));
+    await tester.pumpAndSettle();
 
     expect(find.text('Panda Bear'), findsOneWidget);
     expect(find.text('Green Tea + Milk + Boba Jelly'), findsOneWidget);
@@ -124,7 +145,7 @@ void main() {
 
   testWidgets('Wrong drink shows customer hint', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
-    await _openBearistaShop(tester);
+    await _openBearistaShopForHoney(tester);
 
     await tester.tap(find.text('Green Tea'));
     await tester.pump();
@@ -142,12 +163,16 @@ void main() {
 
   testWidgets('Furniture can be bought with enough coins', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
-    await _openBearistaShop(tester);
+    await _openBearistaShopForHoney(tester);
 
     await _serveHoneyBearOrder(tester);
-    await tester.ensureVisible(find.text('Next Customer'));
-    await tester.tap(find.text('Next Customer'));
-    await tester.pump();
+    await tester.ensureVisible(find.text('Back to Shop'));
+    await tester.tap(find.text('Back to Shop'));
+    await tester.pumpAndSettle();
+
+    await _walkToPandaFromTableOne(tester);
+    await tester.tap(find.text('Talk'));
+    await tester.pumpAndSettle();
 
     for (final ingredient in ['Green Tea', 'Milk', 'Boba Jelly']) {
       await tester.tap(find.text(ingredient));

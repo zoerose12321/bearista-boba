@@ -54,13 +54,18 @@ class CustomerSeatingSpot {
 
   static const spots = [tableSeatOne, tableSeatTwo, couchSeat];
 
+  static CustomerSeatingSpot forSlotIndex(int slotIndex) {
+    return spots[slotIndex % spots.length];
+  }
+
   static CustomerSeatingSpot forCustomerIndex(int index) {
     return spots[index % spots.length];
   }
 }
 
-/// Current phase of the visible customer visit in ShopWorldPage.
+/// Current phase of a customer visit in ShopWorldPage.
 enum CustomerVisitPhase {
+  waitingToEnter,
   entering,
   walkingToSeat,
   seatedReadyToOrder,
