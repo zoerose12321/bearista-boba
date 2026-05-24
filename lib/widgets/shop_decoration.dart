@@ -784,30 +784,33 @@ class PastelLoungeGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final couchW = width * 0.82;
+    final couchW = width * 0.72;
+    final couchLeft = (width - couchW) / 2;
+    final sideTableSize = width * 0.10;
 
     return SizedBox(
       width: width,
       height: height,
       child: Stack(
         clipBehavior: Clip.none,
-        alignment: Alignment.bottomCenter,
         children: [
           Positioned(
-            bottom: height * 0.04,
+            left: couchLeft - width * 0.02,
+            bottom: height * 0.05,
             child: _LoungeAccentRug(
-              width: couchW * 0.95,
-              height: height * 0.22,
+              width: couchW + width * 0.04,
+              height: height * 0.18,
             ),
           ),
           Positioned(
+            left: couchLeft,
             bottom: height * 0.10,
             child: FrontViewPastelCouch(width: couchW),
           ),
           Positioned(
-            left: width * 0.02,
-            bottom: height * 0.16,
-            child: _LoungeSideTable(size: width * 0.13),
+            left: width * 0.04,
+            top: height * 0.05,
+            child: _LoungeSideTable(size: sideTableSize),
           ),
         ],
       ),
