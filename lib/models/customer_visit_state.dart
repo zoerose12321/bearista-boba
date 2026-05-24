@@ -24,6 +24,19 @@ class CustomerSeatingSpot {
   static const entryNormX = 0.13;
   static const entryNormY = 0.86;
 
+  /// Normalized bounds for the player entry/door trigger.
+  static const entryTriggerMinX = 0.09;
+  static const entryTriggerMaxX = 0.24;
+  static const entryTriggerMinY = 0.72;
+  static const entryTriggerMaxY = 0.84;
+
+  static bool isPlayerOnEntry(double normX, double normY) {
+    return normX >= entryTriggerMinX &&
+        normX <= entryTriggerMaxX &&
+        normY >= entryTriggerMinY &&
+        normY <= entryTriggerMaxY;
+  }
+
   /// Mid-aisle waypoint between entry and seats.
   static const midAisleNormX = 0.30;
   static const midAisleNormY = 0.64;

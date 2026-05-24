@@ -12,6 +12,7 @@ import '../widgets/cartoon_shop_scene.dart';
 import '../widgets/shop_decoration.dart';
 import 'bearista_shop_page.dart';
 import 'shop_upgrades_page.dart';
+import 'store_page.dart';
 
 class ShopWorldPage extends StatefulWidget {
   const ShopWorldPage({
@@ -54,6 +55,9 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   late List<int> _slotGenerations;
 
   int _nextReplacementIndex = _slotCount;
+
+  bool _wasOnEntry = false;
+  bool _isNavigatingToStore = false;
 
   /// Walk-path start — clear of entry door, open floor toward counter.
   Listenable get _allWalkAnimations =>
@@ -238,6 +242,37 @@ class _ShopWorldPageState extends State<ShopWorldPage>
             .clamp(_minY, _maxY);
       }
     });
+    _checkEntryTrigger();
+  }
+
+  bool get _isOnEntry => CustomerSeatingSpot.isPlayerOnEntry(
+        _playerNormX,
+        _playerNormY,
+      );
+
+  void _checkEntryTrigger() {
+    final onEntry = _isOnEntry;
+    if (onEntry && !_wasOnEntry && !_isNavigatingToStore) {
+      _openStore();
+    }
+    _wasOnEntry = onEntry;
+  }
+
+  Future<void> _openStore() async {
+    _isNavigatingToStore = true;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => StorePage(
+          player: widget.player,
+          gameState: widget.gameState,
+        ),
+      ),
+    );
+    if (mounted) {
+      _isNavigatingToStore = false;
+      _wasOnEntry = _isOnEntry;
+      setState(() {});
+    }
   }
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
