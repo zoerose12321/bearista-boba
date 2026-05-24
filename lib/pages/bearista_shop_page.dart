@@ -5,6 +5,7 @@ import '../models/bear_customer.dart';
 import '../models/player_character.dart';
 import '../models/drink_order.dart';
 import '../models/shop_game_state.dart';
+import '../services/sound_effects_service.dart';
 import '../widgets/cute_bear_avatar.dart';
 
 class BearistaShopPage extends StatefulWidget {
@@ -81,6 +82,7 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
         _message = _customer.happyMessage;
         _selectedIngredients.clear();
       });
+      SoundEffectsService.instance.playCoinChaching();
     } else {
       setState(() {
         _message = _customer.hintMessage;
