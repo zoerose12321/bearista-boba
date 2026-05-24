@@ -352,18 +352,8 @@ class _CounterCluster extends StatelessWidget {
               ),
             ),
             Positioned(
-              right: w * 0.11,
-              top: h * 0.14,
-              child: Text('🫖', style: TextStyle(fontSize: _stationSize)),
-            ),
-            Positioned(
-              right: w * 0.09,
-              top: h * 0.52,
-              child: Text('🧋', style: TextStyle(fontSize: _emojiSize)),
-            ),
-            Positioned(
-              left: w * 0.02,
-              top: h * 0.02,
+              left: w * 0.03,
+              top: h * 0.04,
               child: Transform.scale(
                 scale: _itemScale,
                 alignment: Alignment.topLeft,
@@ -371,8 +361,13 @@ class _CounterCluster extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: w * 0.44,
-              top: h * 0.38,
+              left: w * 0.22,
+              top: h * 0.20,
+              child: Text('🧋', style: TextStyle(fontSize: _emojiSize)),
+            ),
+            Positioned(
+              left: w * 0.36,
+              top: h * 0.44,
               child: Transform.scale(
                 scale: _itemScale,
                 alignment: Alignment.topLeft,
@@ -380,14 +375,19 @@ class _CounterCluster extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: w * 0.30,
-              top: h * 0.14,
-              child: Text('🧋', style: TextStyle(fontSize: _emojiSize)),
+              right: w * 0.13,
+              top: h * 0.18,
+              child: Text('🫖', style: TextStyle(fontSize: _stationSize)),
+            ),
+            Positioned(
+              right: w * 0.11,
+              top: h * 0.56,
+              child: Text('🧋', style: TextStyle(fontSize: _emojiSize * 0.9)),
             ),
             if (showVase)
               Positioned(
-                left: w * 0.48,
-                top: h * 0.10,
+                left: w * 0.50,
+                top: h * 0.12,
                 child: Text('🌸', style: TextStyle(fontSize: _vaseSize)),
               ),
           ],

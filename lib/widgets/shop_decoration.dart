@@ -287,8 +287,13 @@ class RestaurantSceneScale {
   static const detail = 1.38;
   /// Counter-top prop font/detail boost (v0.1.13).
   static const counterDetail = 1.78;
-  /// Frozen v0.1.13 effective scale for items on the counter (body scale excluded).
-  static const counterTopItemScale = counter * counterDetail;
+  /// Shrink factor for props on the counter (v0.1.15).
+  static const counterTopItemFactor = 0.68;
+  /// Scale for items on the counter — body size excluded (v0.1.14+).
+  static const counterTopItemScale =
+      counter * counterDetail * counterTopItemFactor;
+  /// Detail scale for counter-top fonts/icons (v0.1.15).
+  static const counterTopDetail = counterDetail * counterTopItemFactor;
   /// Additional enlargement for counter body/work surface only (v0.1.14).
   static const counterBodyBoost = 1.32;
   static const zoneFill = 0.96;
@@ -570,7 +575,7 @@ class TopDownCounter extends StatelessWidget {
             top: height * 0.25,
             child: Text(
               '🧋',
-              style: TextStyle(fontSize: 20 * RestaurantSceneScale.counterDetail),
+              style: TextStyle(fontSize: 20 * RestaurantSceneScale.counterTopDetail),
             ),
           ),
           Positioned(
@@ -578,7 +583,7 @@ class TopDownCounter extends StatelessWidget {
             top: height * 0.25,
             child: Text(
               '☕',
-              style: TextStyle(fontSize: 18 * RestaurantSceneScale.counterDetail),
+              style: TextStyle(fontSize: 18 * RestaurantSceneScale.counterTopDetail),
             ),
           ),
           Center(
