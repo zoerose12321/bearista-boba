@@ -306,6 +306,9 @@ class RestaurantSceneScale {
   static const counterBodyBoost = 1.32;
   static const zoneFill = 0.96;
 
+  /// Gap between the main couch and lounge side chairs (design-space px).
+  static const loungeChairGap = 12.0;
+
   static const playerBearSize = 68.0;
   static const customerBearSize = 74.0;
 
@@ -784,9 +787,12 @@ class PastelLoungeGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final couchW = width * 0.72;
+    final couchW = width * 0.58;
     final couchLeft = (width - couchW) / 2;
     final sideTableSize = width * 0.10;
+    final chairW = width * 0.14;
+    final gap = (RestaurantSceneScale.loungeChairGap / ShopSceneLayout.designWidth) *
+        width;
 
     return SizedBox(
       width: width,
@@ -808,7 +814,25 @@ class PastelLoungeGroup extends StatelessWidget {
             child: FrontViewPastelCouch(width: couchW),
           ),
           Positioned(
-            left: width * 0.04,
+            left: couchLeft - gap - chairW,
+            bottom: height * 0.12,
+            child: _LoungeAccentChair(
+              width: chairW,
+              bodyColor: const Color(0xFFE8D4F0),
+              cushionColor: const Color(0xFFFFF8FF),
+            ),
+          ),
+          Positioned(
+            left: couchLeft + couchW + gap,
+            bottom: height * 0.12,
+            child: _LoungeAccentChair(
+              width: chairW,
+              bodyColor: const Color(0xFFF5D6A8),
+              cushionColor: const Color(0xFFFFF8F0),
+            ),
+          ),
+          Positioned(
+            right: width * 0.04,
             top: height * 0.05,
             child: _LoungeSideTable(size: sideTableSize),
           ),
@@ -927,11 +951,11 @@ class FrontViewPastelCouch extends StatelessWidget {
                     accentColor: accentColor,
                   ),
                 ),
-                SizedBox(width: width * 0.03),
+                SizedBox(width: width * 0.04),
                 Expanded(
                   child: _SeatCushion(
                     height: height * 0.18,
-                    color: const Color(0xFFF0E8FF),
+                    color: cushionColor,
                     accentColor: accentColor,
                   ),
                 ),
@@ -1094,47 +1118,123 @@ class _BackCushion extends StatelessWidget {
           ),
         ),
         Positioned(
-          top: height * 0.18,
-          left: height * 0.12,
-          right: height * 0.12,
+          top: height * 0.20,
+          left: height * 0.14,
+          right: height * 0.14,
           child: Container(
-            height: height * 0.22,
+            height: height * 0.20,
             decoration: BoxDecoration(
               color: cushionColor.withValues(alpha: 0.75),
               borderRadius: BorderRadius.circular(height * 0.08),
             ),
           ),
         ),
-        Positioned(
-          top: height * 0.08,
-          left: height * 0.22,
-          child: _CouchPillow(size: height * 0.16, color: const Color(0xFFE8D4F0)),
-        ),
-        Positioned(
-          top: height * 0.08,
-          right: height * 0.22,
-          child: _CouchPillow(size: height * 0.16, color: const Color(0xFFF5D6A8)),
-        ),
       ],
     );
   }
 }
 
-class _CouchPillow extends StatelessWidget {
-  const _CouchPillow({required this.size, required this.color});
+/// Compact front-view accent chair for the lounge nook (v0.1.24+).
+class _LoungeAccentChair extends StatelessWidget {
+  const _LoungeAccentChair({
+    required this.width,
+    required this.bodyColor,
+    required this.cushionColor,
+  });
 
-  final double size;
-  final Color color;
+  final double width;
+  final Color bodyColor;
+  final Color cushionColor;
+
+  double get height => width * 0.85;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size * 0.75,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(size * 0.25),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
+    final armW = width * 0.18;
+    final legH = height * 0.10;
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          Positioned(
+            bottom: legH * 0.4,
+            child: Container(
+              width: width * 0.85,
+              height: height * 0.06,
+              decoration: BoxDecoration(
+                color: Colors.brown.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(height * 0.03),
+              ),
+            ),
+          ),
+          Positioned(
+            left: width * 0.18,
+            bottom: 0,
+            child: _CouchLeg(
+              width: width * 0.10,
+              height: legH,
+              color: const Color(0xFFC4956A),
+            ),
+          ),
+          Positioned(
+            right: width * 0.18,
+            bottom: 0,
+            child: _CouchLeg(
+              width: width * 0.10,
+              height: legH,
+              color: const Color(0xFFC4956A),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            bottom: legH * 0.5,
+            child: _FrontCouchArm(
+              width: armW,
+              height: height * 0.48,
+              color: bodyColor,
+              accentColor: const Color(0xFFE8A598),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            bottom: legH * 0.5,
+            child: _FrontCouchArm(
+              width: armW,
+              height: height * 0.48,
+              color: bodyColor,
+              accentColor: const Color(0xFFE8A598),
+            ),
+          ),
+          Positioned(
+            left: armW * 0.7,
+            right: armW * 0.7,
+            bottom: legH * 0.65,
+            child: _SeatCushion(
+              height: height * 0.22,
+              color: cushionColor,
+              accentColor: const Color(0xFFE8A598),
+            ),
+          ),
+          Positioned(
+            left: armW * 0.55,
+            right: armW * 0.55,
+            bottom: legH * 0.65 + height * 0.20,
+            child: Container(
+              height: height * 0.32,
+              decoration: BoxDecoration(
+                color: bodyColor,
+                borderRadius: BorderRadius.circular(height * 0.10),
+                border: Border.all(
+                  color: const Color(0xFFE8A598).withValues(alpha: 0.45),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
