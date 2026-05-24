@@ -137,9 +137,9 @@ class CartoonShopScene extends StatelessWidget {
     final size = ShopSceneLayout.designSize;
     final tableW = (ShopSceneLayout.designWidth *
             _RestaurantZones.seatingA.width *
-            0.45 *
+            0.50 *
             RestaurantSceneScale.furniture)
-        .clamp(48.0, 68.0);
+        .clamp(56.0, 76.0);
     final tableH = tableW * 0.65;
     final playerHalfW = RestaurantSceneScale.playerBearSize * 0.55;
     final playerOffsetY = RestaurantSceneScale.playerBearSize * 1.55;
@@ -309,8 +309,9 @@ class _CounterCluster extends StatelessWidget {
       builder: (context, constraints) {
         final w = constraints.maxWidth;
         final h = constraints.maxHeight;
-        final emojiSize = 18.0 * scale;
-        final vaseSize = 16.0 * scale;
+        final itemScale = scale * RestaurantSceneScale.detail;
+        final emojiSize = 18.0 * itemScale;
+        final vaseSize = 16.0 * itemScale;
 
         return Stack(
           clipBehavior: Clip.none,
@@ -342,7 +343,7 @@ class _CounterCluster extends StatelessWidget {
               left: 0,
               top: 0,
               child: Transform.scale(
-                scale: scale,
+                scale: itemScale,
                 alignment: Alignment.topLeft,
                 child: _CounterMenuBoard(),
               ),
@@ -351,7 +352,7 @@ class _CounterCluster extends StatelessWidget {
               right: w * 0.02,
               top: h * 0.46,
               child: Transform.scale(
-                scale: scale,
+                scale: itemScale,
                 alignment: Alignment.topRight,
                 child: const TopDownRegister(),
               ),
@@ -410,11 +411,18 @@ class _CounterMenuBoard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFFD4A574), width: 2),
       ),
-      child: const Column(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('MENU', style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
-          Text('🍵', style: TextStyle(fontSize: 10)),
+          Text(
+            'MENU',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 6 * RestaurantSceneScale.detail,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text('🍵', style: TextStyle(fontSize: 10 * RestaurantSceneScale.detail)),
         ],
       ),
     );

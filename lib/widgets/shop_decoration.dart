@@ -54,10 +54,13 @@ class ShopCharacter extends StatelessWidget {
             ),
             child: Text(
               speechText!,
-              style: const TextStyle(
-                fontSize: 11,
+              style: TextStyle(
+                fontSize: (size * 0.19).clamp(
+                  RestaurantSceneScale.minLabelFontSize,
+                  14.0,
+                ),
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF5C4A42),
+                color: const Color(0xFF5C4A42),
               ),
             ),
           ),
@@ -262,6 +265,11 @@ class ShopSceneLayout {
     final scale = scaleFor(availableWidth, availableHeight);
     return Size(designWidth * scale, designHeight * scale);
   }
+
+  /// Width shared by the scene card and top chrome row.
+  static double contentWidthFor(double availableWidth) {
+    return math.min(availableWidth, maxSceneWidth);
+  }
 }
 
 /// Centralized scale constants for the shop world scene (v0.1.10+).
@@ -269,25 +277,86 @@ class ShopSceneLayout {
 class RestaurantSceneScale {
   const RestaurantSceneScale._();
 
-  static const furniture = 1.22;
-  static const stool = 1.15;
-  static const plant = 1.12;
-  static const counter = 1.18;
-  static const entry = 1.20;
-  static const upgrade = 1.25;
-  static const zoneFill = 0.92;
+  static const furniture = 1.58;
+  static const stool = 1.45;
+  static const plant = 1.42;
+  static const counter = 1.55;
+  static const entry = 1.56;
+  static const upgrade = 1.62;
+  /// Register, menu board, and counter emoji readability boost (v0.1.12).
+  static const detail = 1.38;
+  static const zoneFill = 0.96;
 
-  static const playerBearSize = 52.0;
-  static const customerBearSize = 56.0;
+  static const playerBearSize = 68.0;
+  static const customerBearSize = 74.0;
 
   /// Minimum readable label size after scene downscaling.
   static const minLabelFontSize = 10.0;
 
   /// Movement bounds inset for larger character sprites.
-  static const moveMinX = 0.08;
-  static const moveMaxX = 0.90;
-  static const moveMinY = 0.08;
-  static const moveMaxY = 0.86;
+  static const moveMinX = 0.09;
+  static const moveMaxX = 0.89;
+  static const moveMinY = 0.09;
+  static const moveMaxY = 0.84;
+}
+
+/// Top header row aligned to the café scene width (v0.1.12+).
+class ShopWorldHeader extends StatelessWidget implements PreferredSizeWidget {
+  const ShopWorldHeader({
+    super.key,
+    required this.title,
+    required this.coins,
+  });
+
+  final String title;
+  final int coins;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SizedBox(
+      height: kToolbarHeight,
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.maybePop(context),
+            tooltip: 'Back',
+          ),
+          Expanded(
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.tertiary.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                '🪙 $coins',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Top-down restaurant props for the shop floor plan scene.
@@ -379,8 +448,8 @@ class TopDownTableSet extends StatelessWidget {
   final Widget? extraStool;
   final int stoolCount;
 
-  static double groupWidth(double tableWidth) => tableWidth * 1.50;
-  static double groupHeight(double tableHeight) => tableHeight * 1.58;
+  static double groupWidth(double tableWidth) => tableWidth * 1.52;
+  static double groupHeight(double tableHeight) => tableHeight * 1.60;
 
   @override
   Widget build(BuildContext context) {
@@ -489,12 +558,18 @@ class TopDownCounter extends StatelessWidget {
           Positioned(
             left: 16,
             top: height * 0.25,
-            child: const Text('🧋', style: TextStyle(fontSize: 20)),
+            child: Text(
+              '🧋',
+              style: TextStyle(fontSize: 20 * RestaurantSceneScale.detail),
+            ),
           ),
           Positioned(
             right: 16,
             top: height * 0.25,
-            child: const Text('☕', style: TextStyle(fontSize: 18)),
+            child: Text(
+              '☕',
+              style: TextStyle(fontSize: 18 * RestaurantSceneScale.detail),
+            ),
           ),
           Center(
             child: Container(
@@ -533,7 +608,10 @@ class TopDownRegister extends StatelessWidget {
         ],
       ),
       alignment: Alignment.center,
-      child: const Text('💳', style: TextStyle(fontSize: 16)),
+      child: Text(
+        '💳',
+        style: TextStyle(fontSize: 16 * RestaurantSceneScale.detail),
+      ),
     );
   }
 }

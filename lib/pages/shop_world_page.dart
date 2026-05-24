@@ -113,103 +113,101 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.player.displayName}\'s Shop'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.tertiary.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  '🪙 ${widget.gameState.coins}',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
       body: Focus(
         autofocus: true,
         onKeyEvent: _handleKey,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              children: [
-                Expanded(
-                  child: ShopSceneViewport(
-                    child: CartoonShopScene(
-                      playerNormX: _playerNormX,
-                      playerNormY: _playerNormY,
-                      customerNormX: _customerNormX,
-                      customerNormY: _customerNormY,
-                      player: widget.player,
-                      customer: _currentCustomer,
-                      ownedFurnitureIds: widget.gameState.ownedFurnitureIds,
-                      playerNearCustomer: _isNearCustomer,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final contentWidth =
+                    ShopSceneLayout.contentWidthFor(constraints.maxWidth);
+
+                return Column(
+                  children: [
+                    Center(
+                      child: SizedBox(
+                        width: contentWidth,
+                        child: ShopWorldHeader(
+                          title: '${widget.player.displayName}\'s Shop',
+                          coins: widget.gameState.coins,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: ShopSceneLayout.controlsMaxWidth,
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ShopSceneViewport(
+                        child: CartoonShopScene(
+                          playerNormX: _playerNormX,
+                          playerNormY: _playerNormY,
+                          customerNormX: _customerNormX,
+                          customerNormY: _customerNormY,
+                          player: widget.player,
+                          customer: _currentCustomer,
+                          ownedFurnitureIds: widget.gameState.ownedFurnitureIds,
+                          playerNearCustomer: _isNearCustomer,
+                        ),
+                      ),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ShopDpad(onMove: _move),
-                        const SizedBox(height: 16),
-                        Row(
+                    const SizedBox(height: 12),
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: ShopSceneLayout.controlsMaxWidth,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Expanded(
-                              child: _isNearCustomer
-                                  ? FilledButton.icon(
-                                      onPressed: _openBearistaShop,
-                                      icon: const Icon(Icons.chat_bubble_outline),
-                                      label: const Text('Talk'),
-                                    )
-                                  : OutlinedButton.icon(
-                                      onPressed: null,
-                                      icon: const Icon(Icons.chat_bubble_outline),
-                                      label: const Text('Talk'),
-                                    ),
+                            ShopDpad(onMove: _move),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _isNearCustomer
+                                      ? FilledButton.icon(
+                                          onPressed: _openBearistaShop,
+                                          icon: const Icon(
+                                            Icons.chat_bubble_outline,
+                                          ),
+                                          label: const Text('Talk'),
+                                        )
+                                      : OutlinedButton.icon(
+                                          onPressed: null,
+                                          icon: const Icon(
+                                            Icons.chat_bubble_outline,
+                                          ),
+                                          label: const Text('Talk'),
+                                        ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: _openShopUpgrades,
+                                    icon: const Icon(Icons.storefront_outlined),
+                                    label: const Text('Shop Upgrades'),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: _openShopUpgrades,
-                                icon: const Icon(Icons.storefront_outlined),
-                                label: const Text('Shop Upgrades'),
+                            if (!_isNearCustomer) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Walk closer to ${_currentCustomer.name} to talk',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                            ),
+                            ],
                           ],
                         ),
-                        if (!_isNearCustomer) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Walk closer to ${_currentCustomer.name} to talk',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.6),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             ),
           ),
         ),
