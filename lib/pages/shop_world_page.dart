@@ -13,6 +13,7 @@ import '../widgets/cartoon_shop_scene.dart';
 import '../widgets/shop_decoration.dart';
 import 'bearista_shop_page.dart';
 import 'character_creator_page.dart';
+import 'minigames_page.dart';
 import 'shop_upgrades_page.dart';
 import 'store_page.dart';
 
@@ -274,6 +275,11 @@ class _ShopWorldPageState extends State<ShopWorldPage>
         _playerNormY,
       );
 
+  bool get _canPlayMinigames => CafeMinigameCorner.isPlayerNear(
+        _playerNormX,
+        _playerNormY,
+      );
+
   void _checkEntryTrigger() {
     final onEntry = _isOnEntry;
     if (onEntry && !_wasOnEntry && !_isNavigatingToStore) {
@@ -345,6 +351,20 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       _replaceVisit(visit.slotIndex);
     }
     setState(() {});
+  }
+
+  Future<void> _openMinigames() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => MinigamesPage(
+          player: widget.player,
+          gameState: widget.gameState,
+        ),
+      ),
+    );
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _openShopUpgrades() async {
@@ -456,6 +476,18 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                               children: [
                                 ShopDpad(onMove: _move),
                                 const SizedBox(height: 16),
+                                if (_canPlayMinigames) ...[
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.icon(
+                                      key: const Key('play_minigames'),
+                                      onPressed: _openMinigames,
+                                      icon: const Icon(Icons.sports_esports_outlined),
+                                      label: const Text('Play Minigames'),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
                                 Row(
                                   children: [
                                     Expanded(

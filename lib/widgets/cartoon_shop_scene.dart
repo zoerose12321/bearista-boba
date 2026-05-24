@@ -30,6 +30,8 @@ class _RestaurantZones {
   static const signSlot = _Zone(0.58, 0.00, 0.96, 0.06);
   /// Cozy pastel couch nook — right side below the counter.
   static const loungeSlot = _Zone(0.60, 0.46, 0.96, 0.76);
+  /// Game corner — upper center, clear of tables and walk path.
+  static const gameCornerSlot = _Zone(0.36, 0.06, 0.54, 0.28);
   // Walk path — kept clear of furniture (entry → customer).
   static const walkPath = _Zone(0.22, 0.38, 0.58, 0.78);
 }
@@ -182,6 +184,13 @@ class CartoonShopScene extends StatelessWidget {
                       0.075 *
                       RestaurantSceneScale.plant,
                 ),
+              ),
+              _inZone(
+                _RestaurantZones.gameCornerSlot,
+                size,
+                const TopDownArcadeCabinet(),
+                widthFactor: 0.92,
+                heightFactor: 0.92,
               ),
               _inZone(
                 _RestaurantZones.seatingA,

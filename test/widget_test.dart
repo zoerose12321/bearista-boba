@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:bearista_boba/main.dart';
+import 'package:bearista_boba/models/seating_assignment.dart';
 import 'package:bearista_boba/services/coin_reward_service.dart';
 
 Future<void> _enterShop(
@@ -91,12 +94,15 @@ Future<void> _walkAndTalkToCustomer(
   }
 
   final segments = <Future<void> Function()>[
+    () => _tapDpad(tester, down: 4, right: 2),
     () => _tapDpad(tester, up: 5, left: 2),
     () => _tapDpad(tester, down: 3),
     () => _tapDpad(tester, down: 3),
     () => _tapDpad(tester, up: 6, right: 8),
     () => _tapDpad(tester, left: 6, down: 2),
     () => _tapDpad(tester, up: 4, right: 3),
+    () => _tapDpad(tester, right: 6, up: 2),
+    () => _tapDpad(tester, left: 4, up: 3),
   ];
 
   for (final segment in segments) {
@@ -107,6 +113,84 @@ Future<void> _walkAndTalkToCustomer(
   }
 
   fail('Could not reach $customerName for Talk');
+}
+
+Future<void> _walkAndTalkToAnyCustomer(
+  WidgetTester tester, {
+  bool waitForSeat = true,
+}) async {
+  const customerNames = [
+    'Honey Bear',
+    'Panda Bear',
+    'Baby Bear',
+    'Polar Bear',
+    'Sleepy Bear',
+  ];
+
+  if (waitForSeat) {
+    await _waitForCustomersSeated(tester);
+  }
+
+  for (var attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) {
+      await _tapDpad(tester, down: 5, right: 1);
+    }
+
+    for (final name in customerNames) {
+      if (await _tryOpenTalkForCustomer(tester, name)) {
+        return;
+      }
+    }
+
+    final segments = <Future<void> Function()>[
+      () => _tapDpad(tester, down: 4, right: 2),
+      () => _tapDpad(tester, up: 5, left: 2),
+      () => _tapDpad(tester, down: 3),
+      () => _tapDpad(tester, down: 3),
+      () => _tapDpad(tester, up: 6, right: 8),
+      () => _tapDpad(tester, left: 6, down: 2),
+      () => _tapDpad(tester, up: 4, right: 3),
+      () => _tapDpad(tester, right: 6, up: 2),
+      () => _tapDpad(tester, left: 4, up: 3),
+    ];
+
+    for (final segment in segments) {
+      await segment();
+      for (final name in customerNames) {
+        if (await _tryOpenTalkForCustomer(tester, name)) {
+          return;
+        }
+      }
+    }
+  }
+
+  fail('Could not reach any customer for Talk');
+}
+
+Future<void> _serveVisibleCustomerOrder(WidgetTester tester) async {
+  const orders = {
+    'Honey Bear': ['Black Tea', 'Milk', 'Tapioca Pearls'],
+    'Panda Bear': ['Green Tea', 'Milk', 'Boba Jelly'],
+    'Baby Bear': ['Strawberry Tea', 'Milk', 'Tapioca Pearls'],
+    'Polar Bear': ['Green Tea', 'Oat Milk', 'Boba Jelly'],
+    'Sleepy Bear': ['Black Tea', 'Oat Milk', 'Tapioca Pearls'],
+  };
+
+  for (final entry in orders.entries) {
+    if (find.text(entry.key).evaluate().isEmpty) {
+      continue;
+    }
+    for (final ingredient in entry.value) {
+      await tester.tap(find.text(ingredient));
+      await tester.pump();
+    }
+    await tester.ensureVisible(find.text('Serve Drink'));
+    await tester.tap(find.text('Serve Drink'));
+    await tester.pump();
+    return;
+  }
+
+  fail('No known customer order page is open');
 }
 
 Future<void> _openBearistaShopForCustomer(
@@ -128,8 +212,24 @@ Future<void> _serveHoneyBearOrder(WidgetTester tester) async {
   await tester.pump();
 }
 
+Future<void> _walkToMinigames(WidgetTester tester) async {
+  await _tapDpad(tester, up: 5, right: 2);
+}
+
+Future<void> _openMinigamesHub(WidgetTester tester) async {
+  await _enterShop(tester);
+  await _walkToMinigames(tester);
+  await tester.tap(find.byKey(const Key('play_minigames')));
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  setUp(() {
+    SeatingAssignment.testRandom = Random(42);
+  });
+
   tearDown(() {
+    SeatingAssignment.testRandom = null;
     CoinRewardService.rollRewardOverride = null;
   });
 
@@ -219,16 +319,8 @@ void main() {
     await tester.tap(find.text('Back to Shop'));
     await tester.pumpAndSettle();
 
-    await _walkAndTalkToCustomer(tester, 'Panda Bear', waitForSeat: false);
-
-    for (final ingredient in ['Green Tea', 'Milk', 'Boba Jelly']) {
-      await tester.tap(find.text(ingredient));
-      await tester.pump();
-    }
-
-    await tester.ensureVisible(find.text('Serve Drink'));
-    await tester.tap(find.text('Serve Drink'));
-    await tester.pump();
+    await _walkAndTalkToAnyCustomer(tester, waitForSeat: false);
+    await _serveVisibleCustomerOrder(tester);
 
     expect(find.text('🪙 24'), findsOneWidget);
 
@@ -248,5 +340,37 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('🪵'), findsOneWidget);
+  });
+
+  testWidgets('Minigames hub opens from café game corner', (WidgetTester tester) async {
+    await tester.pumpWidget(const BearistaBobaApp());
+    await _openMinigamesHub(tester);
+
+    expect(find.text('Boba Games'), findsOneWidget);
+    expect(find.text('Boba Catch'), findsOneWidget);
+    expect(find.text('Play'), findsOneWidget);
+  });
+
+  testWidgets('Boba Catch awards capped coins once per round', (WidgetTester tester) async {
+    await tester.pumpWidget(const BearistaBobaApp());
+    await _openMinigamesHub(tester);
+
+    await tester.tap(find.text('Play'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start Game'));
+    await tester.pump();
+
+    await tester.pump(const Duration(seconds: 21));
+
+    expect(find.textContaining('Time\'s up!'), findsOneWidget);
+    expect(find.textContaining('Score:'), findsWidgets);
+    expect(find.textContaining('No coins this round'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('boba_catch_play_again')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('boba_catch_left')), findsOneWidget);
+    expect(find.textContaining('Score: 0'), findsWidgets);
   });
 }

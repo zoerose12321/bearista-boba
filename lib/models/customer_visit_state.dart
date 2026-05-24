@@ -76,6 +76,26 @@ class CustomerSeatingSpot {
   }
 }
 
+/// Minigame arcade corner in the café — upper center, clear of tables and counter.
+class CafeMinigameCorner {
+  CafeMinigameCorner._();
+
+  static const normX = 0.44;
+  static const normY = 0.20;
+
+  static const triggerMinX = 0.36;
+  static const triggerMaxX = 0.52;
+  static const triggerMinY = 0.12;
+  static const triggerMaxY = 0.30;
+
+  static bool isPlayerNear(double normX, double normY) {
+    return normX >= triggerMinX &&
+        normX <= triggerMaxX &&
+        normY >= triggerMinY &&
+        normY <= triggerMaxY;
+  }
+}
+
 /// Current phase of a customer visit in ShopWorldPage.
 enum CustomerVisitPhase {
   waitingToEnter,
