@@ -20,6 +20,7 @@ class ShopCharacter extends StatelessWidget {
     this.speechText,
     this.size = 64,
     this.isPlayer = false,
+    this.isSeated = false,
   });
 
   final Color furColor;
@@ -32,10 +33,12 @@ class ShopCharacter extends StatelessWidget {
   final String? speechText;
   final double size;
   final bool isPlayer;
+  final bool isSeated;
 
   @override
   Widget build(BuildContext context) {
-    final avatarSize = size * sizeScale;
+    final seatedScale = isSeated ? 0.92 : 1.0;
+    final avatarSize = size * sizeScale * seatedScale;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -69,11 +72,13 @@ class ShopCharacter extends StatelessWidget {
           const SizedBox(height: 4),
         ],
         Container(
-          padding: EdgeInsets.all(isPlayer ? 6 : 4),
+          padding: EdgeInsets.all(isPlayer ? 6 : (isSeated ? 3 : 4)),
           decoration: BoxDecoration(
             color: isPlayer
                 ? const Color(0xFFF5D6A8).withValues(alpha: 0.35)
-                : Colors.transparent,
+                : isSeated
+                    ? const Color(0xFFF5D6A8).withValues(alpha: 0.18)
+                    : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
           child: CuteBearAvatar(

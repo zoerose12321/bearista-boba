@@ -20,13 +20,21 @@ Future<void> _createCharacterAndEnterShop(
   await tester.pumpAndSettle();
 }
 
+Future<void> _waitForCustomerSeated(WidgetTester tester) async {
+  await tester.pump(const Duration(milliseconds: 1800));
+  await tester.pump(const Duration(milliseconds: 200));
+}
+
 Future<void> _walkToCustomer(WidgetTester tester) async {
-  for (var i = 0; i < 3; i++) {
+  await _waitForCustomerSeated(tester);
+
+  // Honey Bear (index 0) sits at table seat 1 (~0.24, 0.30).
+  for (var i = 0; i < 5; i++) {
     await tester.tap(find.byIcon(Icons.keyboard_arrow_up_rounded));
     await tester.pump(const Duration(milliseconds: 180));
   }
-  for (var i = 0; i < 5; i++) {
-    await tester.tap(find.byIcon(Icons.keyboard_arrow_right_rounded));
+  for (var i = 0; i < 2; i++) {
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_left_rounded));
     await tester.pump(const Duration(milliseconds: 180));
   }
 }

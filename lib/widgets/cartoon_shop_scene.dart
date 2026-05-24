@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/bear_customer.dart';
+import '../models/customer_visit_state.dart';
 import '../models/player_character.dart';
 import 'shop_decoration.dart';
 
@@ -25,7 +26,6 @@ class _RestaurantZones {
   static const seatingB = _Zone(0.08, 0.42, 0.34, 0.60);
   static const cozyTableSlot = _Zone(0.08, 0.62, 0.34, 0.76);
   static const rugSlot = _Zone(0.36, 0.52, 0.52, 0.68);
-  static const customerArea = _Zone(0.38, 0.30, 0.54, 0.50);
   static const counter = _Zone(0.55, 0.02, 0.97, 0.42);
   static const signSlot = _Zone(0.58, 0.00, 0.96, 0.06);
   /// Cozy pastel couch nook — right side below the counter.
@@ -75,6 +75,8 @@ class CartoonShopScene extends StatelessWidget {
     required this.playerNormY,
     required this.customerNormX,
     required this.customerNormY,
+    required this.customerVisitPhase,
+    required this.customerIsSeated,
     required this.player,
     required this.customer,
     required this.ownedFurnitureIds,
@@ -85,6 +87,8 @@ class CartoonShopScene extends StatelessWidget {
   final double playerNormY;
   final double customerNormX;
   final double customerNormY;
+  final CustomerVisitPhase customerVisitPhase;
+  final bool customerIsSeated;
   final PlayerCharacter player;
   final BearCustomer customer;
   final Set<String> ownedFurnitureIds;
@@ -149,7 +153,9 @@ class CartoonShopScene extends StatelessWidget {
     final customerHalfW = RestaurantSceneScale.customerBearSize * 0.95;
 
     final playerPos = _normToScene(playerNormX, playerNormY, size);
-    final customerRect = _zoneRect(_RestaurantZones.customerArea, size);
+    final customerPos = _normToScene(customerNormX, customerNormY, size);
+    final customerOffsetY = RestaurantSceneScale.customerBearSize *
+        (customerIsSeated ? 1.45 : 1.55);
 
     return ClipRRect(
           borderRadius: BorderRadius.circular(24),
@@ -265,18 +271,27 @@ class CartoonShopScene extends StatelessWidget {
                 heightFactor: 0.94,
               ),
               Positioned(
-                left: customerRect.left + (customerRect.width - customerHalfW * 2) / 2,
-                top: customerRect.top + 2,
-                child: ShopCharacter(
-                  furColor: customer.furColor,
-                  accentColor: customer.accentColor,
-                  muzzleColor: customer.muzzleColor,
-                  accessory: customer.accessory,
-                  isPanda: customer.isPanda,
-                  sizeScale: customer.sizeScale,
-                  nameLabel: customer.name,
-                  speechText: playerNearCustomer ? 'Ready to order?' : null,
-                  size: RestaurantSceneScale.customerBearSize,
+                left: customerPos.dx - customerHalfW,
+                top: customerPos.dy - customerOffsetY,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: customerVisitPhase == CustomerVisitPhase.entering
+                      ? 0.92
+                      : 1.0,
+                  child: ShopCharacter(
+                    furColor: customer.furColor,
+                    accentColor: customer.accentColor,
+                    muzzleColor: customer.muzzleColor,
+                    accessory: customer.accessory,
+                    isPanda: customer.isPanda,
+                    sizeScale: customer.sizeScale,
+                    nameLabel: customer.name,
+                    speechText: customerIsSeated && playerNearCustomer
+                        ? 'Ready to order?'
+                        : null,
+                    size: RestaurantSceneScale.customerBearSize,
+                    isSeated: customerIsSeated,
+                  ),
                 ),
               ),
               AnimatedPositioned(
