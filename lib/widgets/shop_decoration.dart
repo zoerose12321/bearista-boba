@@ -14,6 +14,7 @@ class ShopCharacter extends StatelessWidget {
     required this.accentColor,
     this.muzzleColor = const Color(0xFFFFF0E0),
     this.accessory = BearAccessory.none,
+    this.apronColor,
     this.isPanda = false,
     this.sizeScale = 1.0,
     this.nameLabel,
@@ -27,6 +28,7 @@ class ShopCharacter extends StatelessWidget {
   final Color accentColor;
   final Color muzzleColor;
   final BearAccessory accessory;
+  final Color? apronColor;
   final bool isPanda;
   final double sizeScale;
   final String? nameLabel;
@@ -86,6 +88,7 @@ class ShopCharacter extends StatelessWidget {
             accentColor: accentColor,
             muzzleColor: muzzleColor,
             accessory: accessory,
+            apronColor: apronColor,
             isPanda: isPanda,
             size: avatarSize,
             nameLabel: nameLabel,

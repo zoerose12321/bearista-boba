@@ -10,6 +10,12 @@ enum StoreCategory {
   final String description;
 }
 
+enum StoreWearableKind {
+  none,
+  outfit,
+  accessory,
+}
+
 class StoreItem {
   const StoreItem({
     required this.id,
@@ -18,6 +24,9 @@ class StoreItem {
     required this.category,
     required this.emoji,
     required this.cost,
+    this.wearableKind = StoreWearableKind.none,
+    this.apronColor,
+    this.accessoryKind,
   });
 
   final String id;
@@ -26,6 +35,17 @@ class StoreItem {
   final StoreCategory category;
   final String emoji;
   final int cost;
+  final StoreWearableKind wearableKind;
+
+  /// Apron tint for outfit items.
+  final int? apronColor;
+
+  /// Accessory id string matching [PlayerCharacter] store accessory ids.
+  final String? accessoryKind;
+
+  bool get isWearable => wearableKind != StoreWearableKind.none;
+  bool get isOutfit => wearableKind == StoreWearableKind.outfit;
+  bool get isAccessory => wearableKind == StoreWearableKind.accessory;
 
   bool isOwned(Set<String> ownedIds) => ownedIds.contains(id);
 }

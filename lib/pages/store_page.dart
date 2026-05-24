@@ -26,6 +26,7 @@ class _StorePageState extends State<StorePage> {
       MaterialPageRoute<void>(
         builder: (context) => StoreCategoryPage(
           category: category,
+          player: widget.player,
           gameState: widget.gameState,
         ),
       ),
@@ -282,11 +283,8 @@ class _StoreFloor extends StatelessWidget {
                       color: const Color(0xFFF5D6A8).withValues(alpha: 0.35),
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    child: CuteBearAvatar(
-                      furColor: player.furColor,
-                      accentColor: player.accentColor,
-                      accessory: player.accessory,
-                      isPanda: player.isPanda,
+                    child: PlayerBearAvatar(
+                      player: player,
                       size: 88,
                       nameLabel: player.displayName,
                       showStandingSpot: true,

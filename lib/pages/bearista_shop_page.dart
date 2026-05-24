@@ -119,11 +119,8 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
             _InfoCard(
               child: Row(
                 children: [
-                  CuteBearAvatar(
-                    furColor: widget.player.furColor,
-                    accentColor: widget.player.accentColor,
-                    accessory: widget.player.accessory,
-                    isPanda: widget.player.isPanda,
+                  PlayerBearAvatar(
+                    player: widget.player,
                     size: 56,
                   ),
                   const SizedBox(width: 12),

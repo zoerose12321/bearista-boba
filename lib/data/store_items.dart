@@ -1,3 +1,4 @@
+import '../models/player_character.dart';
 import '../models/store_item.dart';
 
 const storeItems = [
@@ -9,6 +10,8 @@ const storeItems = [
     category: StoreCategory.outfits,
     emoji: '🎀',
     cost: 20,
+    wearableKind: StoreWearableKind.outfit,
+    apronColor: 0xFFF5A8C8,
   ),
   StoreItem(
     id: 'mint_apron',
@@ -17,6 +20,8 @@ const storeItems = [
     category: StoreCategory.outfits,
     emoji: '🌿',
     cost: 25,
+    wearableKind: StoreWearableKind.outfit,
+    apronColor: 0xFFB8D4A8,
   ),
   StoreItem(
     id: 'honey_apron',
@@ -25,6 +30,8 @@ const storeItems = [
     category: StoreCategory.outfits,
     emoji: '🍯',
     cost: 30,
+    wearableKind: StoreWearableKind.outfit,
+    apronColor: 0xFFE8C86D,
   ),
 
   // Accessories
@@ -35,6 +42,8 @@ const storeItems = [
     category: StoreCategory.accessories,
     emoji: '🎀',
     cost: 15,
+    wearableKind: StoreWearableKind.accessory,
+    accessoryKind: 'tiny_bow',
   ),
   StoreItem(
     id: 'round_glasses',
@@ -43,6 +52,8 @@ const storeItems = [
     category: StoreCategory.accessories,
     emoji: '👓',
     cost: 20,
+    wearableKind: StoreWearableKind.accessory,
+    accessoryKind: 'round_glasses',
   ),
   StoreItem(
     id: 'flower_pin',
@@ -51,6 +62,8 @@ const storeItems = [
     category: StoreCategory.accessories,
     emoji: '🌸',
     cost: 25,
+    wearableKind: StoreWearableKind.accessory,
+    accessoryKind: 'flower_pin',
   ),
 
   // Furniture
@@ -106,6 +119,15 @@ const storeItems = [
   ),
 ];
 
+StoreItem? storeItemById(String id) {
+  for (final item in storeItems) {
+    if (item.id == id) {
+      return item;
+    }
+  }
+  return null;
+}
+
 List<StoreItem> storeItemsForCategory(StoreCategory category) {
   return storeItems.where((item) => item.category == category).toList();
 }
@@ -117,4 +139,17 @@ StoreCategory? storeCategoryFromTitle(String title) {
     }
   }
   return null;
+}
+
+BearAccessory bearAccessoryForStoreId(String? storeAccessoryId) {
+  switch (storeAccessoryId) {
+    case 'tiny_bow':
+      return BearAccessory.bow;
+    case 'round_glasses':
+      return BearAccessory.glasses;
+    case 'flower_pin':
+      return BearAccessory.flower;
+    default:
+      return BearAccessory.none;
+  }
 }

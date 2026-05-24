@@ -9,6 +9,7 @@ class CuteBearAvatar extends StatelessWidget {
     required this.accentColor,
     this.muzzleColor = const Color(0xFFFFF0E0),
     this.accessory = BearAccessory.none,
+    this.apronColor,
     this.isPanda = false,
     this.size = 64,
     this.nameLabel,
@@ -19,6 +20,7 @@ class CuteBearAvatar extends StatelessWidget {
   final Color accentColor;
   final Color muzzleColor;
   final BearAccessory accessory;
+  final Color? apronColor;
   final bool isPanda;
   final double size;
   final String? nameLabel;
@@ -89,17 +91,67 @@ class CuteBearAvatar extends StatelessWidget {
                       width: 1.5,
                     ),
                   ),
-                  child: Align(
+                  child: Stack(
+                    clipBehavior: Clip.none,
                     alignment: Alignment.topCenter,
-                    child: Container(
-                      margin: EdgeInsets.only(top: size * 0.05),
-                      width: size * 0.12,
-                      height: size * 0.12,
-                      decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: 0.85),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                    children: [
+                      if (apronColor != null) ...[
+                        Positioned(
+                          top: size * 0.02,
+                          child: Container(
+                            width: size * 0.08,
+                            height: size * 0.08,
+                            decoration: BoxDecoration(
+                              color: apronColor!.withValues(alpha: 0.95),
+                              borderRadius: BorderRadius.circular(size * 0.03),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              top: size * 0.07,
+                              left: size * 0.02,
+                              right: size * 0.02,
+                              bottom: size * 0.02,
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: apronColor,
+                                borderRadius:
+                                    BorderRadius.circular(size * 0.14),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.75),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.brown.withValues(alpha: 0.08),
+                                    blurRadius: 2,
+                                    offset: Offset(0, size * 0.02),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ] else
+                        Align(
+                          alignment: Alignment.topCenter,
+                          child: Container(
+                            margin: EdgeInsets.only(top: size * 0.05),
+                            width: size * 0.12,
+                            height: size * 0.12,
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.85),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -255,6 +307,36 @@ class CuteBearAvatar extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Player bear with equipped store outfit and accessory applied.
+class PlayerBearAvatar extends StatelessWidget {
+  const PlayerBearAvatar({
+    super.key,
+    required this.player,
+    this.size = 64,
+    this.nameLabel,
+    this.showStandingSpot = false,
+  });
+
+  final PlayerCharacter player;
+  final double size;
+  final String? nameLabel;
+  final bool showStandingSpot;
+
+  @override
+  Widget build(BuildContext context) {
+    return CuteBearAvatar(
+      furColor: player.furColor,
+      accentColor: player.accentColor,
+      accessory: player.displayAccessory,
+      apronColor: player.equippedApronColor,
+      isPanda: player.isPanda,
+      size: size,
+      nameLabel: nameLabel,
+      showStandingSpot: showStandingSpot,
     );
   }
 }

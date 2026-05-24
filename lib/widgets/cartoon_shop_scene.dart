@@ -298,7 +298,8 @@ class CartoonShopScene extends StatelessWidget {
                   child: ShopCharacter(
                     furColor: player.furColor,
                     accentColor: player.accentColor,
-                    accessory: player.accessory,
+                    accessory: player.displayAccessory,
+                    apronColor: player.equippedApronColor,
                     isPanda: player.isPanda,
                     size: RestaurantSceneScale.playerBearSize,
                     isPlayer: true,

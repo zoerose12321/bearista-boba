@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 
 import '../data/store_items.dart';
+import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
 import '../models/store_item.dart';
+import '../widgets/cute_bear_avatar.dart';
 
 class StoreCategoryPage extends StatefulWidget {
   const StoreCategoryPage({
     super.key,
     required this.category,
+    required this.player,
     required this.gameState,
   });
 
   final StoreCategory category;
+  final PlayerCharacter player;
   final ShopGameState gameState;
 
   @override
@@ -23,8 +27,37 @@ class _StoreCategoryPageState extends State<StoreCategoryPage> {
 
   List<StoreItem> get _items => storeItemsForCategory(widget.category);
 
-  bool _isOwned(StoreItem item) =>
-      widget.gameState.ownsStoreItem(item.id);
+  bool get _showWearablePreview =>
+      widget.category == StoreCategory.outfits ||
+      widget.category == StoreCategory.accessories;
+
+  bool _isOwned(StoreItem item) => widget.gameState.ownsStoreItem(item.id);
+
+  bool _isEquipped(StoreItem item) {
+    if (item.isOutfit) {
+      return widget.player.isOutfitEquipped(item.id);
+    }
+    if (item.isAccessory) {
+      return widget.player.isAccessoryEquipped(item.id);
+    }
+    return false;
+  }
+
+  void _equipItem(StoreItem item) {
+    if (!_isOwned(item)) {
+      return;
+    }
+
+    setState(() {
+      if (item.isOutfit) {
+        widget.player.equipOutfit(item.id);
+        _message = 'Wearing ${item.name}! ${item.emoji}';
+      } else if (item.isAccessory) {
+        widget.player.equipAccessory(item.id);
+        _message = 'Wearing ${item.name}! ${item.emoji}';
+      }
+    });
+  }
 
   void _buyItem(StoreItem item) {
     if (_isOwned(item)) {
@@ -49,7 +82,16 @@ class _StoreCategoryPageState extends State<StoreCategoryPage> {
     }
 
     setState(() {
-      _message = '${item.name} is now yours! ${item.emoji}';
+      if (item.isWearable) {
+        if (item.isOutfit) {
+          widget.player.equipOutfit(item.id);
+        } else if (item.isAccessory) {
+          widget.player.equipAccessory(item.id);
+        }
+        _message = '${item.name} is now yours and equipped! ${item.emoji}';
+      } else {
+        _message = '${item.name} is now yours! ${item.emoji}';
+      }
     });
   }
 
@@ -61,6 +103,37 @@ class _StoreCategoryPageState extends State<StoreCategoryPage> {
       return 'Purchased for your café.';
     }
     return null;
+  }
+
+  Widget _buildActionButton(StoreItem item, ThemeData theme) {
+    final isOwned = _isOwned(item);
+    final isEquipped = _isEquipped(item);
+    final canAfford = widget.gameState.coins >= item.cost;
+
+    if (isOwned && item.isWearable) {
+      if (isEquipped) {
+        return Chip(
+          label: const Text('Equipped'),
+          backgroundColor: theme.colorScheme.primaryContainer,
+        );
+      }
+      return FilledButton(
+        onPressed: () => _equipItem(item),
+        child: const Text('Equip'),
+      );
+    }
+
+    if (isOwned) {
+      return Chip(
+        label: const Text('Owned'),
+        backgroundColor: theme.colorScheme.secondaryContainer,
+      );
+    }
+
+    return FilledButton(
+      onPressed: canAfford ? () => _buyItem(item) : null,
+      child: const Text('Buy'),
+    );
   }
 
   @override
@@ -110,6 +183,31 @@ class _StoreCategoryPageState extends State<StoreCategoryPage> {
                 ),
               ),
             ),
+            if (_showWearablePreview) ...[
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Your look',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      PlayerBearAvatar(
+                        player: widget.player,
+                        size: 88,
+                        nameLabel: widget.player.displayName,
+                        showStandingSpot: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             if (_message != null) ...[
               const SizedBox(height: 12),
               Card(
@@ -199,17 +297,7 @@ class _StoreCategoryPageState extends State<StoreCategoryPage> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        if (isOwned)
-                          Chip(
-                            label: const Text('Owned'),
-                            backgroundColor:
-                                theme.colorScheme.secondaryContainer,
-                          )
-                        else
-                          FilledButton(
-                            onPressed: canAfford ? () => _buyItem(item) : null,
-                            child: const Text('Buy'),
-                          ),
+                        _buildActionButton(item, theme),
                       ],
                     ),
                   ),
