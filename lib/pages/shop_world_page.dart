@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../data/starter_customers.dart';
 import '../models/bear_customer.dart';
-import '../models/bearista_character.dart';
+import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
 import '../widgets/cartoon_shop_scene.dart';
 import '../widgets/shop_decoration.dart';
@@ -13,11 +13,11 @@ import 'shop_upgrades_page.dart';
 class ShopWorldPage extends StatefulWidget {
   const ShopWorldPage({
     super.key,
-    required this.character,
+    required this.player,
     required this.gameState,
   });
 
-  final BearistaCharacter character;
+  final PlayerCharacter player;
   final ShopGameState gameState;
 
   @override
@@ -29,7 +29,6 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
   static const _customerCol = 2;
   static const _customerRow = 1;
 
-  /// Smaller steps keep sideways movement controlled inside the floor area.
   static const _horizontalStep = 0.05;
   static const _verticalStep = 0.09;
 
@@ -90,7 +89,7 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (context) => BearistaShopPage(
-          character: widget.character,
+          player: widget.player,
           gameState: widget.gameState,
         ),
       ),
@@ -113,7 +112,7 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.character.name}\'s Shop'),
+        title: Text('${widget.player.displayName}\'s Shop'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -150,7 +149,7 @@ class _ShopWorldPageState extends State<ShopWorldPage> {
                     playerNormY: _playerNormY,
                     customerCol: _customerCol,
                     customerRow: _customerRow,
-                    characterEmoji: widget.character.emoji,
+                    player: widget.player,
                     customer: _currentCustomer,
                     ownedFurnitureIds: widget.gameState.ownedFurnitureIds,
                     playerNearCustomer: _isNearCustomer,

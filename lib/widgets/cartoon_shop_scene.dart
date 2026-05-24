@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/bear_customer.dart';
+import '../models/player_character.dart';
 import 'shop_decoration.dart';
 
 class CartoonShopScene extends StatelessWidget {
@@ -11,7 +12,7 @@ class CartoonShopScene extends StatelessWidget {
     required this.playerNormY,
     required this.customerCol,
     required this.customerRow,
-    required this.characterEmoji,
+    required this.player,
     required this.customer,
     required this.ownedFurnitureIds,
     required this.playerNearCustomer,
@@ -22,7 +23,7 @@ class CartoonShopScene extends StatelessWidget {
   final double playerNormY;
   final int customerCol;
   final int customerRow;
-  final String characterEmoji;
+  final PlayerCharacter player;
   final BearCustomer customer;
   final Set<String> ownedFurnitureIds;
   final bool playerNearCustomer;
@@ -95,23 +96,31 @@ class CartoonShopScene extends StatelessWidget {
                   ),
                 ),
               Positioned(
-                left: customerPosition.dx - 42,
-                top: customerPosition.dy - 72,
+                left: customerPosition.dx - 48,
+                top: customerPosition.dy - 88,
                 child: ShopCharacter(
-                  emoji: customer.emoji,
+                  furColor: customer.furColor,
+                  accentColor: customer.accentColor,
+                  muzzleColor: customer.muzzleColor,
+                  accessory: customer.accessory,
+                  isPanda: customer.isPanda,
+                  sizeScale: customer.sizeScale,
                   nameLabel: customer.name,
                   speechText: playerNearCustomer ? 'Ready to order?' : null,
-                  size: 46,
+                  size: 52,
                 ),
               ),
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOut,
-                left: playerPosition.dx - 38,
-                top: playerPosition.dy - 58,
+                left: playerPosition.dx - 44,
+                top: playerPosition.dy - 72,
                 child: ShopCharacter(
-                  emoji: characterEmoji,
-                  size: 40,
+                  furColor: player.furColor,
+                  accentColor: player.accentColor,
+                  accessory: player.accessory,
+                  isPanda: player.isPanda,
+                  size: 48,
                   isPlayer: true,
                 ),
               ),

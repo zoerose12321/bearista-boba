@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'character_select_page.dart';
+import 'character_creator_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -43,7 +43,7 @@ class HomePage extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (context) => const CharacterSelectPage(),
+                        builder: (context) => const CharacterCreatorPage(),
                       ),
                     );
                   },

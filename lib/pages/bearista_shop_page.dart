@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../data/starter_customers.dart';
 import '../models/bear_customer.dart';
-import '../models/bearista_character.dart';
+import '../models/player_character.dart';
 import '../models/drink_order.dart';
 import '../models/shop_game_state.dart';
+import '../widgets/cute_bear_avatar.dart';
 
 class BearistaShopPage extends StatefulWidget {
   const BearistaShopPage({
     super.key,
-    required this.character,
+    required this.player,
     required this.gameState,
   });
 
-  final BearistaCharacter character;
+  final PlayerCharacter player;
   final ShopGameState gameState;
 
   @override
@@ -111,20 +112,26 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
             _InfoCard(
               child: Row(
                 children: [
-                  Text(widget.character.emoji, style: const TextStyle(fontSize: 40)),
+                  CuteBearAvatar(
+                    furColor: widget.player.furColor,
+                    accentColor: widget.player.accentColor,
+                    accessory: widget.player.accessory,
+                    isPanda: widget.player.isPanda,
+                    size: 56,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.character.name,
+                          widget.player.displayName,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          widget.character.description,
+                          'Your bearista',
                           style: theme.textTheme.bodyMedium,
                         ),
                       ],
@@ -147,7 +154,14 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
                 children: [
                   Row(
                     children: [
-                      Text(_customer.emoji, style: const TextStyle(fontSize: 36)),
+                      CuteBearAvatar(
+                        furColor: _customer.furColor,
+                        accentColor: _customer.accentColor,
+                        muzzleColor: _customer.muzzleColor,
+                        accessory: _customer.accessory,
+                        isPanda: _customer.isPanda,
+                        size: 52 * _customer.sizeScale,
+                      ),
                       const SizedBox(width: 12),
                       Text(
                         _customer.name,

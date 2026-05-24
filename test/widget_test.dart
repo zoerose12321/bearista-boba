@@ -1,12 +1,27 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:bearista_boba/main.dart';
 
+Future<void> _createCharacterAndEnterShop(
+  WidgetTester tester, {
+  String name = 'Mochi',
+  bool tapStart = true,
+}) async {
+  if (tapStart) {
+    await tester.tap(find.text('Start'));
+    await tester.pumpAndSettle();
+  }
+
+  await tester.enterText(find.byType(TextField), name);
+  await tester.pump();
+
+  await tester.tap(find.byKey(const Key('continue_to_shop')));
+  await tester.pumpAndSettle();
+}
+
 Future<void> _openBearistaShop(WidgetTester tester) async {
-  await tester.tap(find.text('Start'));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Mochi'));
-  await tester.pumpAndSettle();
+  await _createCharacterAndEnterShop(tester);
   await tester.tap(find.text('Talk'));
   await tester.pumpAndSettle();
 }
@@ -37,11 +52,9 @@ void main() {
     await tester.tap(find.text('Start'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Choose Your Bearista'), findsOneWidget);
-    expect(find.text('Sunny'), findsOneWidget);
+    expect(find.text('Create Your Bearista'), findsOneWidget);
 
-    await tester.tap(find.text('Sunny'));
-    await tester.pumpAndSettle();
+    await _createCharacterAndEnterShop(tester, name: 'Sunny', tapStart: false);
 
     expect(find.text('Sunny\'s Shop'), findsOneWidget);
     expect(find.text('Talk'), findsOneWidget);

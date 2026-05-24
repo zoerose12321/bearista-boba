@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
 
+import '../models/player_character.dart';
+import 'cute_bear_avatar.dart';
+
 class ShopCharacter extends StatelessWidget {
   const ShopCharacter({
     super.key,
-    required this.emoji,
+    required this.furColor,
+    required this.accentColor,
+    this.muzzleColor = const Color(0xFFFFF0E0),
+    this.accessory = BearAccessory.none,
+    this.isPanda = false,
+    this.sizeScale = 1.0,
     this.nameLabel,
     this.speechText,
-    this.size = 40,
+    this.size = 64,
     this.isPlayer = false,
   });
 
-  final String emoji;
+  final Color furColor;
+  final Color accentColor;
+  final Color muzzleColor;
+  final BearAccessory accessory;
+  final bool isPanda;
+  final double sizeScale;
   final String? nameLabel;
   final String? speechText;
   final double size;
@@ -18,6 +31,8 @@ class ShopCharacter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final avatarSize = size * sizeScale;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -46,57 +61,23 @@ class ShopCharacter extends StatelessWidget {
           ),
           const SizedBox(height: 4),
         ],
-        if (nameLabel != null) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8A598).withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
-            ),
-            child: Text(
-              nameLabel!,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF5C4A42),
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-        ],
         Container(
-          width: size + 18,
-          height: size + 18,
+          padding: EdgeInsets.all(isPlayer ? 6 : 4),
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
             color: isPlayer
-                ? const Color(0xFFF5D6A8).withValues(alpha: 0.95)
-                : Colors.white.withValues(alpha: 0.92),
-            border: Border.all(
-              color: isPlayer
-                  ? const Color(0xFFE8A598)
-                  : Colors.white.withValues(alpha: 0.9),
-              width: 2.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.brown.withValues(alpha: 0.18),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
+                ? const Color(0xFFF5D6A8).withValues(alpha: 0.35)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
           ),
-          alignment: Alignment.center,
-          child: Text(emoji, style: TextStyle(fontSize: size)),
-        ),
-        const SizedBox(height: 2),
-        Container(
-          width: size * 0.7,
-          height: 6,
-          decoration: BoxDecoration(
-            color: Colors.brown.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(6),
+          child: CuteBearAvatar(
+            furColor: furColor,
+            accentColor: accentColor,
+            muzzleColor: muzzleColor,
+            accessory: accessory,
+            isPanda: isPanda,
+            size: avatarSize,
+            nameLabel: nameLabel,
+            showStandingSpot: true,
           ),
         ),
       ],
