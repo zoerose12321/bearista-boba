@@ -13,13 +13,13 @@ class ActiveCustomerVisit {
     this.coinReward,
   });
 
-  /// Fixed seat slot (0–2) — seat assignment does not change on replacement.
+  /// Animation slot (0–2) — not tied to a fixed seat location.
   final int slotIndex;
 
   /// Index into [starterCustomers].
   int customerIndex;
 
-  final CustomerSeatingSpot seat;
+  CustomerSeatingSpot seat;
   CustomerVisitPhase phase;
   bool orderCompleted;
   int? coinReward;

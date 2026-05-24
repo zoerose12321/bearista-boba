@@ -28,47 +28,93 @@ Future<void> _waitForCustomersSeated(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 200));
 }
 
-Future<void> _walkToHoneyBear(WidgetTester tester) async {
-  await _waitForCustomersSeated(tester);
-
-  // Honey Bear sits at table seat 1 (~0.24, 0.30).
-  for (var i = 0; i < 5; i++) {
+Future<void> _tapDpad(
+  WidgetTester tester, {
+  int up = 0,
+  int down = 0,
+  int left = 0,
+  int right = 0,
+}) async {
+  for (var i = 0; i < up; i++) {
     await tester.tap(find.byIcon(Icons.keyboard_arrow_up_rounded));
     await tester.pump(const Duration(milliseconds: 180));
   }
-  for (var i = 0; i < 2; i++) {
-    await tester.tap(find.byIcon(Icons.keyboard_arrow_left_rounded));
-    await tester.pump(const Duration(milliseconds: 180));
-  }
-}
-
-Future<void> _walkToPandaBear(WidgetTester tester) async {
-  await _waitForCustomersSeated(tester);
-
-  // Panda Bear sits at table seat 2 (~0.24, 0.50) from default spawn.
-  for (var i = 0; i < 2; i++) {
-    await tester.tap(find.byIcon(Icons.keyboard_arrow_up_rounded));
-    await tester.pump(const Duration(milliseconds: 180));
-  }
-  for (var i = 0; i < 3; i++) {
-    await tester.tap(find.byIcon(Icons.keyboard_arrow_left_rounded));
-    await tester.pump(const Duration(milliseconds: 180));
-  }
-}
-
-Future<void> _walkToPandaFromTableOne(WidgetTester tester) async {
-  // After visiting Honey Bear at table 1, walk down to Panda at table 2.
-  for (var i = 0; i < 3; i++) {
+  for (var i = 0; i < down; i++) {
     await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded));
     await tester.pump(const Duration(milliseconds: 180));
   }
+  for (var i = 0; i < left; i++) {
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_left_rounded));
+    await tester.pump(const Duration(milliseconds: 180));
+  }
+  for (var i = 0; i < right; i++) {
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_right_rounded));
+    await tester.pump(const Duration(milliseconds: 180));
+  }
 }
 
-Future<void> _openBearistaShopForHoney(WidgetTester tester) async {
-  await _enterShop(tester);
-  await _walkToHoneyBear(tester);
+bool _canTalk(WidgetTester tester) {
+  return find.widgetWithText(FilledButton, 'Talk').evaluate().isNotEmpty;
+}
+
+Future<bool> _tryOpenTalkForCustomer(
+  WidgetTester tester,
+  String customerName,
+) async {
+  if (!_canTalk(tester)) {
+    return false;
+  }
+
   await tester.tap(find.text('Talk'));
   await tester.pumpAndSettle();
+
+  if (find.text(customerName).evaluate().isNotEmpty) {
+    return true;
+  }
+
+  await tester.tap(find.byTooltip('Back'));
+  await tester.pumpAndSettle();
+  return false;
+}
+
+Future<void> _walkAndTalkToCustomer(
+  WidgetTester tester,
+  String customerName, {
+  bool waitForSeat = true,
+}) async {
+  if (waitForSeat) {
+    await _waitForCustomersSeated(tester);
+  }
+
+  if (await _tryOpenTalkForCustomer(tester, customerName)) {
+    return;
+  }
+
+  final segments = <Future<void> Function()>[
+    () => _tapDpad(tester, up: 5, left: 2),
+    () => _tapDpad(tester, down: 3),
+    () => _tapDpad(tester, down: 3),
+    () => _tapDpad(tester, up: 6, right: 8),
+    () => _tapDpad(tester, left: 6, down: 2),
+    () => _tapDpad(tester, up: 4, right: 3),
+  ];
+
+  for (final segment in segments) {
+    await segment();
+    if (await _tryOpenTalkForCustomer(tester, customerName)) {
+      return;
+    }
+  }
+
+  fail('Could not reach $customerName for Talk');
+}
+
+Future<void> _openBearistaShopForCustomer(
+  WidgetTester tester,
+  String customerName,
+) async {
+  await _enterShop(tester);
+  await _walkAndTalkToCustomer(tester, customerName);
 }
 
 Future<void> _serveHoneyBearOrder(WidgetTester tester) async {
@@ -107,9 +153,7 @@ void main() {
     expect(find.text('Panda Bear'), findsOneWidget);
     expect(find.text('Baby Bear'), findsOneWidget);
 
-    await _walkToHoneyBear(tester);
-    await tester.tap(find.text('Talk'));
-    await tester.pumpAndSettle();
+    await _walkAndTalkToCustomer(tester, 'Honey Bear');
 
     expect(find.text('Bearista Shop'), findsOneWidget);
     expect(find.text('Serve Drink'), findsOneWidget);
@@ -119,7 +163,7 @@ void main() {
     CoinRewardService.rollRewardOverride = () => 12;
 
     await tester.pumpWidget(const BearistaBobaApp());
-    await _openBearistaShopForHoney(tester);
+    await _openBearistaShopForCustomer(tester, 'Honey Bear');
 
     expect(find.text('🪙 0'), findsOneWidget);
 
@@ -140,9 +184,7 @@ void main() {
   testWidgets('Talk opens selected customer order', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
     await _enterShop(tester);
-    await _walkToPandaBear(tester);
-    await tester.tap(find.text('Talk'));
-    await tester.pumpAndSettle();
+    await _walkAndTalkToCustomer(tester, 'Panda Bear');
 
     expect(find.text('Panda Bear'), findsOneWidget);
     expect(find.text('Green Tea + Milk + Boba Jelly'), findsOneWidget);
@@ -150,7 +192,7 @@ void main() {
 
   testWidgets('Wrong drink shows customer hint', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
-    await _openBearistaShopForHoney(tester);
+    await _openBearistaShopForCustomer(tester, 'Honey Bear');
 
     await tester.tap(find.text('Green Tea'));
     await tester.pump();
@@ -167,23 +209,17 @@ void main() {
   });
 
   testWidgets('Furniture can be bought with enough coins', (WidgetTester tester) async {
-    var rewardCall = 0;
-    CoinRewardService.rollRewardOverride = () {
-      rewardCall++;
-      return 12;
-    };
+    CoinRewardService.rollRewardOverride = () => 12;
 
     await tester.pumpWidget(const BearistaBobaApp());
-    await _openBearistaShopForHoney(tester);
+    await _openBearistaShopForCustomer(tester, 'Honey Bear');
 
     await _serveHoneyBearOrder(tester);
     await tester.ensureVisible(find.text('Back to Shop'));
     await tester.tap(find.text('Back to Shop'));
     await tester.pumpAndSettle();
 
-    await _walkToPandaFromTableOne(tester);
-    await tester.tap(find.text('Talk'));
-    await tester.pumpAndSettle();
+    await _walkAndTalkToCustomer(tester, 'Panda Bear', waitForSeat: false);
 
     for (final ingredient in ['Green Tea', 'Milk', 'Boba Jelly']) {
       await tester.tap(find.text(ingredient));

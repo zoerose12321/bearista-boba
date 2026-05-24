@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../data/starter_customers.dart';
 import '../models/active_customer_visit.dart';
+import '../models/seating_assignment.dart';
 import '../models/customer_visit_state.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
@@ -72,11 +73,12 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       (_) => AnimationController(vsync: this, duration: _walkDuration),
     );
     _slotGenerations = List.filled(_slotCount, 0);
+    final initialSeats = SeatingAssignment.pickUniqueSpots(_slotCount);
     _visits = List.generate(_slotCount, (slotIndex) {
       return ActiveCustomerVisit(
         slotIndex: slotIndex,
         customerIndex: slotIndex,
-        seat: CustomerSeatingSpot.forSlotIndex(slotIndex),
+        seat: initialSeats[slotIndex],
       );
     });
 
@@ -230,7 +232,27 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     _nextReplacementIndex++;
     visit.orderCompleted = false;
     visit.coinReward = null;
+    _assignRandomSeat(slotIndex);
     _scheduleVisitStart(slotIndex);
+  }
+
+  void _assignRandomSeat(int slotIndex) {
+    final occupied = <String>{};
+    for (var i = 0; i < _visits.length; i++) {
+      if (i == slotIndex) {
+        continue;
+      }
+      final other = _visits[i];
+      if (other.phase == CustomerVisitPhase.waitingToEnter) {
+        continue;
+      }
+      occupied.add(other.seat.id);
+    }
+
+    _visits[slotIndex].seat = SeatingAssignment.pickOpenSpot(
+      occupied,
+      fallback: _visits[slotIndex].seat,
+    );
   }
 
   void _move(int deltaCol, int deltaRow) {
