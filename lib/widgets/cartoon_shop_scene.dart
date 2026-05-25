@@ -286,10 +286,12 @@ class CartoonShopScene extends StatelessWidget {
                       furColor: display.customer.furColor,
                       accentColor: display.customer.accentColor,
                       muzzleColor: display.customer.muzzleColor,
+                      cheekColor: display.customer.cheekColor,
                       accessory: display.customer.accessory,
                       isPanda: display.customer.isPanda,
                       sizeScale: display.customer.sizeScale,
-                      nameLabel: display.customer.name,
+                      nameLabel: display.customer.cafeNameLabel,
+                      specialBadgeEmoji: display.customer.specialBadgeEmoji,
                       speechText: display.showSpeechPrompt
                           ? 'Ready to order?'
                           : null,

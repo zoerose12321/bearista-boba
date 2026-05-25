@@ -4,6 +4,7 @@ import '../data/starter_ingredients.dart';
 import '../models/custom_recipe.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
+import '../services/special_recipe_bear_factory.dart';
 import '../widgets/minigame_common.dart';
 
 enum _CreatorPhase { editing, unlocked }
@@ -179,7 +180,7 @@ class _TeaTimeDashGamePageState extends State<TeaTimeDashGamePage> {
                       const SizedBox(height: 6),
                       Text(
                         'Choose one from each group, name your drink, '
-                        'and unlock Recipe Bear as a special café guest.',
+                        'and unlock a special bear guest for your café.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.7),
@@ -412,6 +413,7 @@ class _UnlockPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bearName = SpecialRecipeBearFactory.bearNameFromRecipeName(recipe.name);
 
     return Center(
       child: ConstrainedBox(
@@ -457,7 +459,7 @@ class _UnlockPanel extends StatelessWidget {
                       const Text('✨🐻', style: TextStyle(fontSize: 36)),
                       const SizedBox(height: 8),
                       Text(
-                        'Recipe Bear unlocked!',
+                        '$bearName unlocked!',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF5C4A42),
@@ -465,8 +467,7 @@ class _UnlockPanel extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Your special guest may visit the café and order '
-                        'your custom recipe.',
+                        '$bearName may visit the café and order your custom recipe.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.75),

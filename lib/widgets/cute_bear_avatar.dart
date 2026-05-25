@@ -8,22 +8,26 @@ class CuteBearAvatar extends StatelessWidget {
     required this.furColor,
     required this.accentColor,
     this.muzzleColor = const Color(0xFFFFF0E0),
+    this.cheekColor,
     this.accessory = BearAccessory.none,
     this.apronColor,
     this.isPanda = false,
     this.size = 64,
     this.nameLabel,
+    this.specialBadgeEmoji,
     this.showStandingSpot = false,
   });
 
   final Color furColor;
   final Color accentColor;
   final Color muzzleColor;
+  final Color? cheekColor;
   final BearAccessory accessory;
   final Color? apronColor;
   final bool isPanda;
   final double size;
   final String? nameLabel;
+  final String? specialBadgeEmoji;
   final bool showStandingSpot;
 
   @override
@@ -38,22 +42,28 @@ class CuteBearAvatar extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (nameLabel != null) ...[
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: size * 0.12,
-              vertical: size * 0.05,
-            ),
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(size * 0.14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
-            ),
-            child: Text(
-              nameLabel!,
-              style: TextStyle(
-                fontSize: size * 0.16,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF5C4A42),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: size * 1.35),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: size * 0.12,
+                vertical: size * 0.05,
+              ),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(size * 0.14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
+              ),
+              child: Text(
+                nameLabel!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: nameLabel!.length > 14 ? size * 0.13 : size * 0.16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF5C4A42),
+                ),
               ),
             ),
           ),
@@ -252,12 +262,18 @@ class CuteBearAvatar extends StatelessWidget {
                       Positioned(
                         left: headSize * 0.1,
                         bottom: headSize * 0.28,
-                        child: _Blush(size: size * 0.07),
+                        child: _Blush(
+                          size: size * 0.07,
+                          color: cheekColor,
+                        ),
                       ),
                       Positioned(
                         right: headSize * 0.1,
                         bottom: headSize * 0.28,
-                        child: _Blush(size: size * 0.07),
+                        child: _Blush(
+                          size: size * 0.07,
+                          color: cheekColor,
+                        ),
                       ),
                       if (accessory == BearAccessory.bow)
                         Positioned(
@@ -298,6 +314,15 @@ class CuteBearAvatar extends StatelessWidget {
                           right: -size * 0.04,
                           top: headSize * 0.18,
                           child: Text('🌸', style: TextStyle(fontSize: size * 0.18)),
+                        ),
+                      if (specialBadgeEmoji != null)
+                        Positioned(
+                          right: -size * 0.02,
+                          top: -earSize * 0.15,
+                          child: Text(
+                            specialBadgeEmoji!,
+                            style: TextStyle(fontSize: size * 0.2),
+                          ),
                         ),
                     ],
                   ),
@@ -408,9 +433,10 @@ class _EyePatch extends StatelessWidget {
 }
 
 class _Blush extends StatelessWidget {
-  const _Blush({required this.size});
+  const _Blush({required this.size, this.color});
 
   final double size;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -418,7 +444,7 @@ class _Blush extends StatelessWidget {
       width: size,
       height: size * 0.65,
       decoration: BoxDecoration(
-        color: const Color(0xFFF5A8C8).withValues(alpha: 0.45),
+        color: (color ?? const Color(0xFFF5A8C8)).withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(size),
       ),
     );

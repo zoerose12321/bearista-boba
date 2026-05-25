@@ -400,7 +400,7 @@ void main() {
     expect(find.byKey(const Key('boba_stack_play_again')), findsOneWidget);
   });
 
-  testWidgets('Tea Time Dash creates recipe and unlocks Recipe Bear', (WidgetTester tester) async {
+  testWidgets('Tea Time Dash creates recipe and unlocks special bear', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
     await _openMinigamesHub(tester);
 
@@ -433,7 +433,7 @@ void main() {
 
     expect(find.textContaining('Recipe Created!'), findsOneWidget);
     expect(find.text('Honey Cloud Boba'), findsOneWidget);
-    expect(find.textContaining('Recipe Bear unlocked!'), findsOneWidget);
+    expect(find.textContaining('Honey Cloud Bear unlocked!'), findsOneWidget);
     expect(
       find.textContaining('Black Tea + Milk + Tapioca Pearls'),
       findsOneWidget,

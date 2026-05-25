@@ -15,8 +15,8 @@ class ShopGameState {
   final List<CustomRecipe> customRecipes = [];
   final Set<String> unlockedIngredientNames = StarterIngredients.initialUnlocked();
 
-  /// Special customer unlocked by the latest custom recipe.
-  BearCustomer? recipeBear;
+  /// Special customers unlocked by custom recipes, keyed by recipe id.
+  final Map<String, BearCustomer> recipeBearsByRecipeId = {};
 
   bool ownsStoreItem(String id) => ownedStoreItemIds.contains(id);
 
@@ -44,10 +44,10 @@ class ShopGameState {
     orderCompleted = false;
   }
 
-  /// Saves a custom recipe and unlocks/updates Recipe Bear.
+  /// Saves a custom recipe and unlocks/updates its special bear customer.
   void addCustomRecipe(CustomRecipe recipe) {
     customRecipes.add(recipe);
-    recipeBear = BearCustomer.fromCustomRecipe(recipe);
+    recipeBearsByRecipeId[recipe.id] = BearCustomer.fromCustomRecipe(recipe);
   }
 
   bool _customerIsMakeable(BearCustomer customer) {
@@ -56,12 +56,14 @@ class ShopGameState {
 
   /// Starter bears with makeable orders plus any unlocked special customers.
   List<BearCustomer> get customerPool {
-    final pool = starterCustomers
-        .where(_customerIsMakeable)
-        .toList();
-    if (recipeBear != null && _customerIsMakeable(recipeBear!)) {
-      pool.add(recipeBear!);
+    final pool = starterCustomers.where(_customerIsMakeable).toList();
+
+    for (final bear in recipeBearsByRecipeId.values) {
+      if (_customerIsMakeable(bear)) {
+        pool.add(bear);
+      }
     }
+
     if (pool.isEmpty) {
       return List<BearCustomer>.from(starterCustomers.take(3));
     }
@@ -69,8 +71,10 @@ class ShopGameState {
   }
 
   BearCustomer customerById(String id) {
-    if (id == BearCustomer.recipeBearId && recipeBear != null) {
-      return recipeBear!;
+    for (final bear in recipeBearsByRecipeId.values) {
+      if (bear.id == id) {
+        return bear;
+      }
     }
     return starterCustomers.firstWhere((customer) => customer.id == id);
   }

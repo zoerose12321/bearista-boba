@@ -13,11 +13,13 @@ class ShopCharacter extends StatelessWidget {
     required this.furColor,
     required this.accentColor,
     this.muzzleColor = const Color(0xFFFFF0E0),
+    this.cheekColor,
     this.accessory = BearAccessory.none,
     this.apronColor,
     this.isPanda = false,
     this.sizeScale = 1.0,
     this.nameLabel,
+    this.specialBadgeEmoji,
     this.speechText,
     this.size = 64,
     this.isPlayer = false,
@@ -27,11 +29,13 @@ class ShopCharacter extends StatelessWidget {
   final Color furColor;
   final Color accentColor;
   final Color muzzleColor;
+  final Color? cheekColor;
   final BearAccessory accessory;
   final Color? apronColor;
   final bool isPanda;
   final double sizeScale;
   final String? nameLabel;
+  final String? specialBadgeEmoji;
   final String? speechText;
   final double size;
   final bool isPlayer;
@@ -87,11 +91,13 @@ class ShopCharacter extends StatelessWidget {
             furColor: furColor,
             accentColor: accentColor,
             muzzleColor: muzzleColor,
+            cheekColor: cheekColor,
             accessory: accessory,
             apronColor: apronColor,
             isPanda: isPanda,
             size: avatarSize,
             nameLabel: nameLabel,
+            specialBadgeEmoji: specialBadgeEmoji,
             showStandingSpot: true,
           ),
         ),
