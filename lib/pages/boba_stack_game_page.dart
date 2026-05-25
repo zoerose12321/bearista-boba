@@ -541,30 +541,33 @@ class _JumpStackArena extends StatelessWidget {
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
                 final height = constraints.maxHeight;
-                const maxVisible = 10;
-                final visibleStacked = cupsStacked.clamp(0, maxVisible);
-                final hiddenCount = cupsStacked - visibleStacked;
+                const stackBaseBottom = 16.0;
+                const maxVisibleCups = 12;
+                final hiddenCount = max(0, cupsStacked - maxVisibleCups);
+                final visibleCount = min(cupsStacked, maxVisibleCups);
                 final cupWidth = (width * 0.20).clamp(40.0, 64.0);
                 final cupHeight = cupWidth * 0.55;
-                final maxStackHeight = height * 0.52;
-                final spacing = cupsStacked <= 1
-                    ? cupHeight * 0.40
-                    : min(
-                        cupHeight * 0.40,
-                        maxStackHeight / max(visibleStacked + 1, 2),
-                      );
-                final incomingCupBottom = 16 + (cupsStacked + 1) * spacing;
+                final cupStep = cupHeight * 0.82;
+                final maxTowerHeight = height * 0.58;
+                final towerHeight = visibleCount * cupStep;
+                final effectiveStep = towerHeight > maxTowerHeight && visibleCount > 0
+                    ? maxTowerHeight / visibleCount
+                    : cupStep;
+                final stackTopBottom = stackBaseBottom + visibleCount * effectiveStep;
+                final playerSeatOffset = cupHeight * 0.38;
                 final playerBottom =
-                    16 + cupsStacked * spacing + cupHeight - 4 + jumpOffset;
+                    stackTopBottom + playerSeatOffset + jumpOffset;
+                final incomingCupBottom =
+                    stackBaseBottom + (visibleCount + 1) * effectiveStep;
                 final playerSize = (width * 0.18).clamp(44.0, 58.0);
 
                 return Stack(
-                  clipBehavior: Clip.none,
+                  clipBehavior: Clip.hardEdge,
                   children: [
                     Positioned(
                       left: width * 0.5 - 1,
                       top: height * 0.12,
-                      bottom: 16,
+                      bottom: stackBaseBottom,
                       child: Container(
                         width: 2,
                         color: const Color(0xFFE8A598).withValues(alpha: 0.35),
@@ -583,13 +586,13 @@ class _JumpStackArena extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      bottom: 16,
+                      bottom: stackBaseBottom,
                       left: width * 0.5 - cupWidth / 2,
                       child: _StackCupWidget(size: cupWidth, highlight: false),
                     ),
-                    for (var i = 0; i < visibleStacked; i++)
+                    for (var i = 0; i < visibleCount; i++)
                       Positioned(
-                        bottom: 16 + (i + 1) * spacing,
+                        bottom: stackBaseBottom + (i + 1) * effectiveStep,
                         left: width * 0.5 - cupWidth / 2,
                         child: _StackCupWidget(size: cupWidth, highlight: false),
                       ),
@@ -609,8 +612,8 @@ class _JumpStackArena extends StatelessWidget {
                     ),
                     if (hiddenCount > 0)
                       Positioned(
-                        top: 8,
-                        right: 12,
+                        bottom: stackBaseBottom + effectiveStep * 0.35,
+                        left: width * 0.5 + cupWidth * 0.55,
                         child: Text(
                           '+$hiddenCount',
                           style: Theme.of(context).textTheme.labelMedium?.copyWith(
