@@ -151,7 +151,7 @@ class _MinigamesPageState extends State<MinigamesPage> {
                           title: 'Boba Stack',
                           emoji: '🥛',
                           description:
-                              'Stack cups as high as you can! Earn 1 coin per 2 cups.',
+                              'Jump to stack sliding cups! Earn coins for your tower.',
                           playKey: const Key('minigame_play_boba_stack'),
                           onTap: _openBobaStack,
                         ),

@@ -18,12 +18,14 @@ class MinigameResult {
     return score.clamp(0, maxCoinReward);
   }
 
-  /// Boba Stack: 1 coin per 2 cups stacked (integer division).
+  /// Boba Stack: 1 coin per 2 cups stacked, minimum 1 if any stacked.
   static int coinsForBobaStackScore(int cupsStacked, {int maxCoinReward = maxCoinReward}) {
     if (cupsStacked <= 0) {
       return 0;
     }
-    return (cupsStacked ~/ 2).clamp(0, maxCoinReward);
+    final base = cupsStacked ~/ 2;
+    final earned = base < 1 ? 1 : base;
+    return earned.clamp(0, maxCoinReward);
   }
 
   factory MinigameResult.fromBobaCatchScore(int score) {

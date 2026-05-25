@@ -378,7 +378,7 @@ void main() {
     expect(find.textContaining('Score: 0'), findsWidgets);
   });
 
-  testWidgets('Boba Stack stacks cups and finishes round', (WidgetTester tester) async {
+  testWidgets('Boba Stack jump game finishes round', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
     await _openMinigamesHub(tester);
 
@@ -387,23 +387,17 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Start Game'));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-    await tester.tap(find.byKey(const Key('boba_stack_cup')));
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('boba_stack_cup')));
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('boba_stack_cup')));
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('boba_stack_cup')));
-    await tester.pump();
-
-    expect(find.text('Cups: 4'), findsOneWidget);
+    for (var i = 0; i < 50; i++) {
+      await tester.tap(find.byKey(const Key('boba_stack_jump')));
+      await tester.pump(const Duration(milliseconds: 90));
+    }
 
     await tester.pump(const Duration(seconds: 21));
 
-    expect(find.textContaining('Cups stacked: 4'), findsOneWidget);
-    expect(find.textContaining('+2 coins earned!'), findsOneWidget);
+    expect(find.textContaining('Cups stacked:'), findsOneWidget);
+    expect(find.byKey(const Key('boba_stack_play_again')), findsOneWidget);
   });
 
   testWidgets('Tea Time Dash creates recipe and unlocks Recipe Bear', (WidgetTester tester) async {
@@ -423,9 +417,6 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const Key('recipe_milk_Milk')));
     await tester.pump();
-    await tester.tap(find.byKey(const Key('recipe_topping_Tapioca Pearls')));
-    await tester.pump();
-    await tester.ensureVisible(find.byKey(const Key('recipe_topping_Tapioca Pearls')));
     await tester.tap(find.byKey(const Key('recipe_topping_Tapioca Pearls')));
     await tester.pump();
 
