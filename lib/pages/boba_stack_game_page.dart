@@ -31,7 +31,10 @@ class _BobaStackGamePageState extends State<BobaStackGamePage>
   static const _gameSeconds = 20;
   static const _maxTries = 3;
   static const _stackZoneCenter = 0.5;
-  static const _judgeWindow = 0.03;
+  static const _judgeWindow = 0.035;
+  static const _baseSlideSpeed = 0.014;
+  static const _slideSpeedPerCup = 0.001;
+  static const _nextCupDelayMs = 320;
 
   final Random _random = Random();
 
@@ -51,6 +54,7 @@ class _BobaStackGamePageState extends State<BobaStackGamePage>
   bool _cupActive = false;
   bool _cupJudged = false;
   bool _fromLeft = true;
+  bool _nextCupScheduled = false;
   double _slidingCupX = -0.12;
 
   @override
@@ -81,7 +85,7 @@ class _BobaStackGamePageState extends State<BobaStackGamePage>
 
   double get _jumpOffset => sin(pi * _jumpController.value) * 42;
 
-  double get _slideSpeed => 0.010 + _cupsStacked * 0.0007;
+  double get _slideSpeed => _baseSlideSpeed + _cupsStacked * _slideSpeedPerCup;
 
   void _startGame() {
     _countdownTimer?.cancel();
@@ -98,6 +102,8 @@ class _BobaStackGamePageState extends State<BobaStackGamePage>
       _feedbackMessage = null;
       _cupActive = false;
       _cupJudged = false;
+      _nextCupScheduled = false;
+      _fromLeft = true;
     });
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -117,19 +123,28 @@ class _BobaStackGamePageState extends State<BobaStackGamePage>
       _onSlideTick();
     });
 
-    Future<void>.delayed(const Duration(milliseconds: 450), () {
-      if (mounted && _phase == _GamePhase.playing) {
+    _scheduleNextCup(delay: const Duration(milliseconds: 450));
+  }
+
+  void _scheduleNextCup({Duration delay = const Duration(milliseconds: _nextCupDelayMs)}) {
+    if (_nextCupScheduled || _phase != _GamePhase.playing || _triesLeft <= 0) {
+      return;
+    }
+    _nextCupScheduled = true;
+    Future<void>.delayed(delay, () {
+      _nextCupScheduled = false;
+      if (mounted && _phase == _GamePhase.playing && _triesLeft > 0) {
         _spawnCup();
       }
     });
   }
 
   void _spawnCup() {
-    if (_phase != _GamePhase.playing || _triesLeft <= 0) {
+    if (_phase != _GamePhase.playing || _triesLeft <= 0 || _cupActive) {
       return;
     }
     setState(() {
-      _fromLeft = _random.nextBool();
+      _fromLeft = _cupsStacked.isEven ? _random.nextBool() : !_fromLeft;
       _slidingCupX = _fromLeft ? -0.14 : 1.14;
       _cupActive = true;
       _cupJudged = false;
@@ -137,49 +152,52 @@ class _BobaStackGamePageState extends State<BobaStackGamePage>
     });
   }
 
+  void _resolveSuccess() {
+    setState(() {
+      _cupJudged = true;
+      _cupActive = false;
+      _cupsStacked++;
+      _feedbackMessage = 'Nice stack! 🧋';
+    });
+    _scheduleNextCup();
+  }
+
+  void _resolveMiss(String message) {
+    setState(() {
+      _cupJudged = true;
+      _cupActive = false;
+      _feedbackMessage = message;
+      _triesLeft--;
+    });
+    if (_triesLeft <= 0) {
+      _finishGame();
+      return;
+    }
+    _scheduleNextCup(delay: const Duration(milliseconds: 400));
+  }
+
   void _onSlideTick() {
-    if (!mounted || _phase != _GamePhase.playing || !_cupActive) {
+    if (!mounted || _phase != _GamePhase.playing || !_cupActive || _cupJudged) {
       return;
     }
 
     setState(() {
       _slidingCupX += _fromLeft ? _slideSpeed : -_slideSpeed;
-
-      if (!_cupJudged && (_slidingCupX - _stackZoneCenter).abs() <= _judgeWindow) {
-        _cupJudged = true;
-        if (_isAirborne) {
-          _cupsStacked++;
-          _feedbackMessage = 'Nice stack! 🧋';
-        } else {
-          _feedbackMessage = 'Miss! Jump when the cup slides under you.';
-          _triesLeft--;
-          if (_triesLeft <= 0) {
-            _finishGame();
-            return;
-          }
-        }
-      }
-
-      final offScreen =
-          _fromLeft ? _slidingCupX > 1.14 : _slidingCupX < -0.14;
-      if (offScreen) {
-        _cupActive = false;
-        if (!_cupJudged) {
-          _cupJudged = true;
-          _feedbackMessage = 'Too slow! Jump as the cup passes by.';
-          _triesLeft--;
-          if (_triesLeft <= 0) {
-            _finishGame();
-            return;
-          }
-        }
-        Future<void>.delayed(const Duration(milliseconds: 350), () {
-          if (mounted && _phase == _GamePhase.playing) {
-            _spawnCup();
-          }
-        });
-      }
     });
+
+    if (!_cupJudged && (_slidingCupX - _stackZoneCenter).abs() <= _judgeWindow) {
+      if (_isAirborne) {
+        _resolveSuccess();
+      } else {
+        _resolveMiss('Miss! Jump when the cup slides under you.');
+      }
+      return;
+    }
+
+    final offScreen = _fromLeft ? _slidingCupX > 1.14 : _slidingCupX < -0.14;
+    if (offScreen) {
+      _resolveMiss('Too slow! Jump as the cup passes by.');
+    }
   }
 
   void _jump() {
@@ -471,17 +489,20 @@ class _JumpStackArena extends StatelessWidget {
                 final width = constraints.maxWidth;
                 final height = constraints.maxHeight;
                 const maxVisible = 10;
-                final visibleCups = cupsStacked.clamp(0, maxVisible);
-                final hiddenCount = cupsStacked - visibleCups;
+                final visibleStacked = cupsStacked.clamp(0, maxVisible);
+                final hiddenCount = cupsStacked - visibleStacked;
                 final cupWidth = (width * 0.20).clamp(40.0, 64.0);
                 final cupHeight = cupWidth * 0.55;
-                final spacing = visibleCups <= 1
-                    ? cupHeight * 0.42
+                final maxStackHeight = height * 0.52;
+                final spacing = cupsStacked <= 1
+                    ? cupHeight * 0.40
                     : min(
-                        cupHeight * 0.42,
-                        (height * 0.42) / max(visibleCups, 1),
+                        cupHeight * 0.40,
+                        maxStackHeight / max(visibleStacked + 1, 2),
                       );
-                final stackTop = 18 + visibleCups * spacing;
+                final incomingCupBottom = 16 + (cupsStacked + 1) * spacing;
+                final playerBottom =
+                    16 + cupsStacked * spacing + cupHeight - 4 - jumpOffset;
                 final playerSize = (width * 0.18).clamp(44.0, 58.0);
 
                 return Stack(
@@ -513,7 +534,7 @@ class _JumpStackArena extends StatelessWidget {
                       left: width * 0.5 - cupWidth / 2,
                       child: _StackCupWidget(size: cupWidth, highlight: false),
                     ),
-                    for (var i = 0; i < visibleCups; i++)
+                    for (var i = 0; i < visibleStacked; i++)
                       Positioned(
                         bottom: 16 + (i + 1) * spacing,
                         left: width * 0.5 - cupWidth / 2,
@@ -522,11 +543,11 @@ class _JumpStackArena extends StatelessWidget {
                     if (cupActive)
                       Positioned(
                         left: slidingCupX * width - cupWidth / 2,
-                        bottom: 16 + stackTop,
+                        bottom: incomingCupBottom,
                         child: _StackCupWidget(size: cupWidth, highlight: true),
                       ),
                     Positioned(
-                      bottom: 16 + stackTop + cupHeight - 4 - jumpOffset,
+                      bottom: playerBottom,
                       left: width * 0.5 - playerSize / 2,
                       child: PlayerBearAvatar(
                         player: player,
