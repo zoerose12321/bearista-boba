@@ -30,6 +30,11 @@ class _BobaCatchGamePageState extends State<BobaCatchGamePage> {
   static const _cupWidth = 0.20;
   static const _pearlSize = 0.10;
   static const _catchLine = 0.88;
+  static const _cupMoveStep = 0.14;
+  static const _playAreaMargin = 0.02;
+
+  static double get _cupMinCenterX => _playAreaMargin + _cupWidth / 2;
+  static double get _cupMaxCenterX => 1.0 - _playAreaMargin - _cupWidth / 2;
 
   final Random _random = Random();
 
@@ -63,7 +68,7 @@ class _BobaCatchGamePageState extends State<BobaCatchGamePage> {
       _secondsLeft = _gameSeconds;
       _rewardClaimed = false;
       _result = null;
-      _cupCenterX = 0.12;
+      _cupCenterX = _cupMinCenterX;
       _spawnPearl();
     });
 
@@ -95,12 +100,12 @@ class _BobaCatchGamePageState extends State<BobaCatchGamePage> {
   }
 
   void _spawnPearl() {
-    var x = 0.12 + _random.nextDouble() * 0.76;
+    var x = _cupMinCenterX + _random.nextDouble() * (_cupMaxCenterX - _cupMinCenterX);
     for (var attempt = 0; attempt < 8; attempt++) {
       if ((x - _cupCenterX).abs() > _cupWidth) {
         break;
       }
-      x = 0.12 + _random.nextDouble() * 0.76;
+      x = _cupMinCenterX + _random.nextDouble() * (_cupMaxCenterX - _cupMinCenterX);
     }
     _fallingX = x;
     _fallingY = 0.05;
@@ -142,7 +147,8 @@ class _BobaCatchGamePageState extends State<BobaCatchGamePage> {
       return;
     }
     setState(() {
-      _cupCenterX = (_cupCenterX + direction * 0.08).clamp(0.12, 0.88);
+      _cupCenterX =
+          (_cupCenterX + direction * _cupMoveStep).clamp(_cupMinCenterX, _cupMaxCenterX);
     });
   }
 
