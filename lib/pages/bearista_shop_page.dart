@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/starter_ingredients.dart';
 import '../models/bear_customer.dart';
 import '../models/drink_order.dart';
 import '../models/shop_game_state.dart';
@@ -31,29 +32,18 @@ class BearistaShopPage extends StatefulWidget {
 }
 
 class _BearistaShopPageState extends State<BearistaShopPage> {
-  static const _availableIngredients = [
-    'Black Tea',
-    'Green Tea',
-    'Strawberry Tea',
-    'Matcha Tea',
-    'Milk',
-    'Oat Milk',
-    'Coconut Milk',
-    'Tapioca Pearls',
-    'Boba Jelly',
-    'Strawberry Jelly',
-    'Honey Drizzle',
-    'Vanilla',
-    'Lavender',
-    'Brown Sugar',
-  ];
-
   final List<String> _selectedIngredients = [];
   String? _message;
   late bool _orderCompleted;
   int? _coinReward;
 
   BearCustomer get _customer => widget.customer;
+
+  List<String> get _availableIngredients =>
+      StarterIngredients.unlockedFrom(widget.gameState.unlockedIngredientNames);
+
+  bool get _orderIsMakeable =>
+      _customer.order.usesOnlyUnlocked(widget.gameState.unlockedIngredientNames);
 
   DrinkOrder get _selectedDrink =>
       DrinkOrder(ingredients: List.from(_selectedIngredients));
@@ -234,26 +224,43 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
               ),
             ),
             const SizedBox(height: 24),
+            if (!_orderIsMakeable) ...[
+              _InfoCard(
+                backgroundColor: theme.colorScheme.errorContainer,
+                child: Text(
+                  'This order needs ingredients you have not unlocked yet. '
+                  'Visit the store Ingredients shelf to unlock more!',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             Text(
               'Ingredients',
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _availableIngredients.map((ingredient) {
-                final isSelected = _selectedIngredients.contains(ingredient);
-                return FilterChip(
-                  label: Text(ingredient),
-                  selected: isSelected,
-                  onSelected: _orderCompleted
-                      ? null
-                      : (_) => _toggleIngredient(ingredient),
-                  showCheckmark: false,
-                );
-              }).toList(),
-            ),
+            if (_availableIngredients.isEmpty)
+              Text(
+                'No ingredients unlocked yet.',
+                style: theme.textTheme.bodyMedium,
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _availableIngredients.map((ingredient) {
+                  final isSelected = _selectedIngredients.contains(ingredient);
+                  return FilterChip(
+                    label: Text(ingredient),
+                    selected: isSelected,
+                    onSelected: _orderCompleted || !_orderIsMakeable
+                        ? null
+                        : (_) => _toggleIngredient(ingredient),
+                    showCheckmark: false,
+                  );
+                }).toList(),
+              ),
             const SizedBox(height: 24),
             _InfoCard(
               child: Column(
@@ -302,7 +309,7 @@ class _BearistaShopPageState extends State<BearistaShopPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
-                    onPressed: _orderCompleted ? null : _serveDrink,
+                    onPressed: _orderCompleted || !_orderIsMakeable ? null : _serveDrink,
                     child: const Padding(
                       padding: EdgeInsets.symmetric(vertical: 4),
                       child: Text('Serve Drink'),

@@ -52,9 +52,14 @@ class CustomRecipe {
     required String? tea,
     required String? milk,
     required String? topping,
-    required String? flavor,
+    String? flavor,
   }) {
-    return [tea!, milk!, topping!, flavor!];
+    return [
+      tea!,
+      milk!,
+      topping!,
+      ?flavor,
+    ];
   }
 
   static String generateName({

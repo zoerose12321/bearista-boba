@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/starter_ingredients.dart';
 import '../models/custom_recipe.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
@@ -33,8 +34,27 @@ class _TeaTimeDashGamePageState extends State<TeaTimeDashGamePage> {
   _CreatorPhase _phase = _CreatorPhase.editing;
   CustomRecipe? _createdRecipe;
 
+  Set<String> get _unlocked => widget.gameState.unlockedIngredientNames;
+
+  List<String> get _teaOptions =>
+      StarterIngredients.filterUnlocked(CustomRecipe.teaBases, _unlocked);
+
+  List<String> get _milkOptions =>
+      StarterIngredients.filterUnlocked(CustomRecipe.milks, _unlocked);
+
+  List<String> get _toppingOptions =>
+      StarterIngredients.filterUnlocked(CustomRecipe.toppings, _unlocked);
+
+  List<String> get _flavorOptions =>
+      StarterIngredients.filterUnlocked(CustomRecipe.flavors, _unlocked);
+
+  bool get _flavorRequired => _flavorOptions.isNotEmpty;
+
   bool get _isComplete =>
-      _tea != null && _milk != null && _topping != null && _flavor != null;
+      _tea != null &&
+      _milk != null &&
+      _topping != null &&
+      (!_flavorRequired || _flavor != null);
 
   @override
   void dispose() {
@@ -75,7 +95,23 @@ class _TeaTimeDashGamePageState extends State<TeaTimeDashGamePage> {
   void _createRecipe() {
     if (!_isComplete) {
       setState(() {
-        _message = 'Pick one tea, milk, topping, and flavor to continue! 🧋';
+        _message = _flavorRequired
+            ? 'Pick one tea, milk, topping, and flavor to continue! 🧋'
+            : 'Pick one tea, milk, and topping to continue! 🧋';
+      });
+      return;
+    }
+
+    final ingredients = CustomRecipe.ingredientsFromSelections(
+      tea: _tea,
+      milk: _milk,
+      topping: _topping,
+      flavor: _flavorRequired ? _flavor : null,
+    );
+
+    if (!ingredients.every(_unlocked.contains)) {
+      setState(() {
+        _message = 'Unlock those ingredients at the store before using them! 🛒';
       });
       return;
     }
@@ -83,12 +119,7 @@ class _TeaTimeDashGamePageState extends State<TeaTimeDashGamePage> {
     final recipe = CustomRecipe(
       id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
       name: _recipeName(),
-      ingredients: CustomRecipe.ingredientsFromSelections(
-        tea: _tea,
-        milk: _milk,
-        topping: _topping,
-        flavor: _flavor,
-      ),
+      ingredients: ingredients,
     );
 
     widget.gameState.addCustomRecipe(recipe);
@@ -156,10 +187,24 @@ class _TeaTimeDashGamePageState extends State<TeaTimeDashGamePage> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 20),
+                      if (_teaOptions.isEmpty ||
+                          _milkOptions.isEmpty ||
+                          _toppingOptions.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            'Buy more ingredients at the store to create more recipes!',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       _IngredientGroup(
                         groupId: 'tea',
                         title: 'Tea base',
-                        options: CustomRecipe.teaBases,
+                        options: _teaOptions,
                         selected: _tea,
                         onSelected: (value) => setState(() {
                           _tea = value;
@@ -170,7 +215,7 @@ class _TeaTimeDashGamePageState extends State<TeaTimeDashGamePage> {
                       _IngredientGroup(
                         groupId: 'milk',
                         title: 'Milk',
-                        options: CustomRecipe.milks,
+                        options: _milkOptions,
                         selected: _milk,
                         onSelected: (value) => setState(() {
                           _milk = value;
@@ -181,24 +226,36 @@ class _TeaTimeDashGamePageState extends State<TeaTimeDashGamePage> {
                       _IngredientGroup(
                         groupId: 'topping',
                         title: 'Topping',
-                        options: CustomRecipe.toppings,
+                        options: _toppingOptions,
                         selected: _topping,
                         onSelected: (value) => setState(() {
                           _topping = value;
                           _message = null;
                         }),
                       ),
-                      const SizedBox(height: 16),
-                      _IngredientGroup(
-                        groupId: 'flavor',
-                        title: 'Flavor / special',
-                        options: CustomRecipe.flavors,
-                        selected: _flavor,
-                        onSelected: (value) => setState(() {
-                          _flavor = value;
-                          _message = null;
-                        }),
-                      ),
+                      if (_flavorRequired) ...[
+                        const SizedBox(height: 16),
+                        _IngredientGroup(
+                          groupId: 'flavor',
+                          title: 'Flavor / special',
+                          options: _flavorOptions,
+                          selected: _flavor,
+                          onSelected: (value) => setState(() {
+                            _flavor = value;
+                            _message = null;
+                          }),
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Buy flavor ingredients at the store to add a special touch!',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.6),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                       const SizedBox(height: 20),
                       Text(
                         'Recipe name',
@@ -259,7 +316,9 @@ class _TeaTimeDashGamePageState extends State<TeaTimeDashGamePage> {
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            'Select all four ingredient groups to unlock Create Recipe.',
+                            _flavorRequired
+                                ? 'Select all four ingredient groups to unlock Create Recipe.'
+                                : 'Select tea, milk, and topping to unlock Create Recipe.',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface
                                   .withValues(alpha: 0.55),
@@ -309,18 +368,27 @@ class _IngredientGroup extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: options.map((option) {
-                return ChoiceChip(
-                  key: Key('recipe_${groupId}_$option'),
-                  label: Text(option),
-                  selected: selected == option,
-                  onSelected: (_) => onSelected(option),
-                );
-              }).toList(),
-            ),
+            if (options.isEmpty)
+              Text(
+                'Unlock more at the store Ingredients shelf.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: options.map((option) {
+                  return ChoiceChip(
+                    key: Key('recipe_${groupId}_$option'),
+                    label: Text(option),
+                    selected: selected == option,
+                    onSelected: (_) => onSelected(option),
+                  );
+                }).toList(),
+              ),
           ],
         ),
       ),

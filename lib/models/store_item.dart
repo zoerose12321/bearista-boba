@@ -27,6 +27,7 @@ class StoreItem {
     this.wearableKind = StoreWearableKind.none,
     this.apronColor,
     this.accessoryKind,
+    this.ingredientName,
   });
 
   final String id;
@@ -43,9 +44,14 @@ class StoreItem {
   /// Accessory id string matching [PlayerCharacter] store accessory ids.
   final String? accessoryKind;
 
+  /// Ingredient display name unlocked when this item is purchased.
+  final String? ingredientName;
+
   bool get isWearable => wearableKind != StoreWearableKind.none;
   bool get isOutfit => wearableKind == StoreWearableKind.outfit;
   bool get isAccessory => wearableKind == StoreWearableKind.accessory;
+  bool get isIngredientUnlock =>
+      category == StoreCategory.ingredients && ingredientName != null;
 
   bool isOwned(Set<String> ownedIds) => ownedIds.contains(id);
 }

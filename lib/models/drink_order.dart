@@ -18,5 +18,10 @@ class DrinkOrder {
     return true;
   }
 
+  /// True when every ingredient in this order is unlocked.
+  bool usesOnlyUnlocked(Set<String> unlockedIngredientNames) {
+    return ingredients.every(unlockedIngredientNames.contains);
+  }
+
   String get displayText => ingredients.join(' + ');
 }

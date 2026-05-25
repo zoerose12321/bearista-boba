@@ -89,6 +89,8 @@ class _StoreCategoryPageState extends State<StoreCategoryPage> {
           widget.player.equipAccessory(item.id);
         }
         _message = '${item.name} is now yours and equipped! ${item.emoji}';
+      } else if (item.isIngredientUnlock) {
+        _message = '${item.name} is unlocked for your drinks! ${item.emoji}';
       } else {
         _message = '${item.name} is now yours! ${item.emoji}';
       }
@@ -101,6 +103,9 @@ class _StoreCategoryPageState extends State<StoreCategoryPage> {
     }
     if (item.category == StoreCategory.furniture) {
       return 'Purchased for your café.';
+    }
+    if (item.isIngredientUnlock) {
+      return 'Unlocked for your drinks and recipes.';
     }
     return null;
   }

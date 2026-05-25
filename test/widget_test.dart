@@ -171,9 +171,9 @@ Future<void> _serveVisibleCustomerOrder(WidgetTester tester) async {
   const orders = {
     'Honey Bear': ['Black Tea', 'Milk', 'Tapioca Pearls'],
     'Panda Bear': ['Green Tea', 'Milk', 'Boba Jelly'],
-    'Baby Bear': ['Strawberry Tea', 'Milk', 'Tapioca Pearls'],
-    'Polar Bear': ['Green Tea', 'Oat Milk', 'Boba Jelly'],
-    'Sleepy Bear': ['Black Tea', 'Oat Milk', 'Tapioca Pearls'],
+    'Baby Bear': ['Black Tea', 'Milk', 'Boba Jelly'],
+    'Polar Bear': ['Green Tea', 'Milk', 'Tapioca Pearls'],
+    'Sleepy Bear': ['Black Tea', 'Milk', 'Tapioca Pearls'],
   };
 
   for (final entry in orders.entries) {
@@ -425,8 +425,8 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const Key('recipe_topping_Tapioca Pearls')));
     await tester.pump();
-    await tester.ensureVisible(find.byKey(const Key('recipe_flavor_Honey Drizzle')));
-    await tester.tap(find.byKey(const Key('recipe_flavor_Honey Drizzle')));
+    await tester.ensureVisible(find.byKey(const Key('recipe_topping_Tapioca Pearls')));
+    await tester.tap(find.byKey(const Key('recipe_topping_Tapioca Pearls')));
     await tester.pump();
 
     await tester.ensureVisible(find.byKey(const Key('recipe_name_field')));
@@ -444,7 +444,7 @@ void main() {
     expect(find.text('Honey Cloud Boba'), findsOneWidget);
     expect(find.textContaining('Recipe Bear unlocked!'), findsOneWidget);
     expect(
-      find.textContaining('Black Tea + Milk + Tapioca Pearls + Honey Drizzle'),
+      find.textContaining('Black Tea + Milk + Tapioca Pearls'),
       findsOneWidget,
     );
   });
