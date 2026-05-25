@@ -30,7 +30,7 @@ class _BobaCatchGamePageState extends State<BobaCatchGamePage> {
   static const _cupWidth = 0.20;
   static const _pearlSize = 0.10;
   static const _catchLine = 0.88;
-  static const _cupMoveStep = 0.14;
+  static const _cupMoveStep = 0.16;
   static const _playAreaMargin = 0.02;
 
   static double get _cupMinCenterX => _playAreaMargin + _cupWidth / 2;
