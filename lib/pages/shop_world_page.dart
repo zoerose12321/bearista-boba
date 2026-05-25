@@ -10,6 +10,7 @@ import '../models/seating_assignment.dart';
 import '../models/customer_visit_state.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
+import '../widgets/ad_placeholder_bar.dart';
 import '../widgets/cartoon_shop_scene.dart';
 import '../widgets/shop_decoration.dart';
 import 'bearista_shop_page.dart';
@@ -444,141 +445,159 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       body: Focus(
         autofocus: true,
         onKeyEvent: _handleKey,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final contentWidth =
-                    ShopSceneLayout.contentWidthFor(constraints.maxWidth);
+        child: Column(
+          children: [
+            Expanded(
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final contentWidth = ShopSceneLayout.contentWidthFor(
+                        constraints.maxWidth,
+                      );
 
-                return Column(
-                  children: [
-                    Center(
-                      child: SizedBox(
-                        width: contentWidth,
-                        child: ShopWorldHeader(
-                          title: '${widget.player.displayName}\'s Shop',
-                          coins: widget.gameState.coins,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: AnimatedBuilder(
-                        animation: _allWalkAnimations,
-                        builder: (context, child) {
-                          final talkTarget = _nearestTalkTarget();
-                          return ShopSceneViewport(
-                            child: CartoonShopScene(
-                              playerNormX: _playerNormX,
-                              playerNormY: _playerNormY,
-                              customers: _sceneCustomers(talkTarget),
-                              player: widget.player,
-                              ownedFurnitureIds:
-                                  widget.gameState.ownedFurnitureIds,
-                              onPlayerTap: _openCharacterEditor,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    AnimatedBuilder(
-                      animation: _allWalkAnimations,
-                      builder: (context, child) {
-                        final talkTarget = _nearestTalkTarget();
-                        final canTalk = talkTarget != null &&
-                            _isNear(
-                              _positionForVisit(talkTarget).dx,
-                              _positionForVisit(talkTarget).dy,
-                            );
-
-                        return Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: ShopSceneLayout.controlsMaxWidth,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ShopDpad(onMove: _move),
-                                const SizedBox(height: 16),
-                                if (_canPlayMinigames) ...[
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: FilledButton.icon(
-                                      key: const Key('play_minigames'),
-                                      onPressed: _openMinigames,
-                                      icon: const Icon(Icons.sports_esports_outlined),
-                                      label: const Text('Play Minigames'),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                ],
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: canTalk
-                                          ? FilledButton.icon(
-                                              onPressed: () =>
-                                                  _openBearistaShop(talkTarget),
-                                              icon: const Icon(
-                                                Icons.chat_bubble_outline,
-                                              ),
-                                              label: const Text('Talk'),
-                                            )
-                                          : OutlinedButton.icon(
-                                              onPressed: null,
-                                              icon: const Icon(
-                                                Icons.chat_bubble_outline,
-                                              ),
-                                              label: const Text('Talk'),
-                                            ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: OutlinedButton.icon(
-                                        onPressed: _openShopUpgrades,
-                                        icon: const Icon(
-                                          Icons.storefront_outlined,
-                                        ),
-                                        label: const Text('Shop Upgrades'),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (!canTalk) ...[
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _talkHint(talkTarget),
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Tap your bear to customize',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.45),
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
+                      return Column(
+                        children: [
+                          Center(
+                            child: SizedBox(
+                              width: contentWidth,
+                              child: ShopWorldHeader(
+                                title: '${widget.player.displayName}\'s Shop',
+                                coins: widget.gameState.coins,
+                              ),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                  ],
-                );
-              },
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: AnimatedBuilder(
+                              animation: _allWalkAnimations,
+                              builder: (context, child) {
+                                final talkTarget = _nearestTalkTarget();
+                                return ShopSceneViewport(
+                                  child: CartoonShopScene(
+                                    playerNormX: _playerNormX,
+                                    playerNormY: _playerNormY,
+                                    customers: _sceneCustomers(talkTarget),
+                                    player: widget.player,
+                                    ownedFurnitureIds:
+                                        widget.gameState.ownedFurnitureIds,
+                                    onPlayerTap: _openCharacterEditor,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          AnimatedBuilder(
+                            animation: _allWalkAnimations,
+                            builder: (context, child) {
+                              final talkTarget = _nearestTalkTarget();
+                              final canTalk = talkTarget != null &&
+                                  _isNear(
+                                    _positionForVisit(talkTarget).dx,
+                                    _positionForVisit(talkTarget).dy,
+                                  );
+
+                              return Center(
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: ShopSceneLayout.controlsMaxWidth,
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ShopDpad(onMove: _move),
+                                      const SizedBox(height: 12),
+                                      if (_canPlayMinigames) ...[
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: FilledButton.icon(
+                                            key: const Key('play_minigames'),
+                                            onPressed: _openMinigames,
+                                            icon: const Icon(
+                                              Icons.sports_esports_outlined,
+                                            ),
+                                            label: const Text('Play Minigames'),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                      ],
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: canTalk
+                                                ? FilledButton.icon(
+                                                    onPressed: () =>
+                                                        _openBearistaShop(
+                                                          talkTarget,
+                                                        ),
+                                                    icon: const Icon(
+                                                      Icons
+                                                          .chat_bubble_outline,
+                                                    ),
+                                                    label: const Text('Talk'),
+                                                  )
+                                                : OutlinedButton.icon(
+                                                    onPressed: null,
+                                                    icon: const Icon(
+                                                      Icons
+                                                          .chat_bubble_outline,
+                                                    ),
+                                                    label: const Text('Talk'),
+                                                  ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: OutlinedButton.icon(
+                                              onPressed: _openShopUpgrades,
+                                              icon: const Icon(
+                                                Icons.storefront_outlined,
+                                              ),
+                                              label: const Text('Shop Upgrades'),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (!canTalk) ...[
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          _talkHint(talkTarget),
+                                          style:
+                                              theme.textTheme.bodySmall?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withValues(alpha: 0.6),
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Tap your bear to customize',
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.onSurface
+                                              .withValues(alpha: 0.45),
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
             ),
-          ),
+            // Reserved bottom banner slot — replace [AdPlaceholderBar] with ad widget later.
+            const AdPlaceholderBar(),
+          ],
         ),
       ),
     );
