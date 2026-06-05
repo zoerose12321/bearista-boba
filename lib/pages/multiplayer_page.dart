@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../models/local_multiplayer_state.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
 import '../widgets/multiplayer_panel.dart';
 
-class MultiplayerPage extends StatelessWidget {
+class MultiplayerPage extends StatefulWidget {
   const MultiplayerPage({
     super.key,
     required this.player,
@@ -13,6 +14,13 @@ class MultiplayerPage extends StatelessWidget {
 
   final PlayerCharacter player;
   final ShopGameState gameState;
+
+  @override
+  State<MultiplayerPage> createState() => _MultiplayerPageState();
+}
+
+class _MultiplayerPageState extends State<MultiplayerPage> {
+  final LocalMultiplayerState _multiplayerState = LocalMultiplayerState();
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +44,24 @@ class MultiplayerPage extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: MultiplayerPanel(
-              player: player,
-              gameState: gameState,
+              player: widget.player,
+              gameState: widget.gameState,
+              multiplayerState: _multiplayerState,
               onClose: () => Navigator.of(context).maybePop(),
+              onStartLocalCafe: () =>
+                  setState(() => _multiplayerState.startLocalCafe()),
+              onAddFriendHelper: () => setState(() {
+                _multiplayerState.addFriendHelper(
+                  playerNormX: 0.36,
+                  playerNormY: 0.68,
+                  minX: 0.36,
+                  maxX: 0.89,
+                  minY: 0.09,
+                  maxY: 0.84,
+                );
+              }),
+              onEndMultiplayer: () =>
+                  setState(() => _multiplayerState.endMultiplayer()),
             ),
           ),
         ),

@@ -10,6 +10,7 @@ import '../models/active_customer_visit.dart';
 import '../models/seating_assignment.dart';
 import '../models/control_style.dart';
 import '../models/customer_visit_state.dart';
+import '../models/local_multiplayer_state.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
 import '../widgets/ad_placeholder_bar.dart';
@@ -17,6 +18,7 @@ import '../widgets/cartoon_shop_scene.dart';
 import '../widgets/joy_con_control.dart';
 import '../widgets/movement_controls.dart';
 import '../widgets/multiplayer_panel.dart';
+import '../widgets/p2_movement_controls.dart';
 import '../widgets/shop_decoration.dart';
 import 'bearista_shop_page.dart';
 import 'character_creator_page.dart';
@@ -72,6 +74,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   bool _wasOnEntry = false;
   bool _isNavigatingToStore = false;
   bool _multiplayerPanelOpen = false;
+  final LocalMultiplayerState _localMultiplayer = LocalMultiplayerState();
 
   final GlobalKey<JoyConControlState> _joyConKey = GlobalKey<JoyConControlState>();
   Timer? _joyConMoveTimer;
@@ -237,9 +240,85 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   }
 
   double _distanceInSteps(double normX, double normY) {
-    final dx = (_playerNormX - normX).abs();
-    final dy = (_playerNormY - normY).abs();
+    return _distanceBetween(_playerNormX, _playerNormY, normX, normY);
+  }
+
+  double _distanceBetween(
+    double fromX,
+    double fromY,
+    double toX,
+    double toY,
+  ) {
+    final dx = (fromX - toX).abs();
+    final dy = (fromY - toY).abs();
     return dx / _horizontalStep + dy / _verticalStep;
+  }
+
+  String? _friendHelperPrompt() {
+    if (!_localMultiplayer.isFriendHelperActive) {
+      return null;
+    }
+
+    for (final visit in _visits) {
+      if (!visit.isSeated) {
+        continue;
+      }
+      final pos = _positionForVisit(visit);
+      if (_distanceBetween(
+            _localMultiplayer.friendNormX,
+            _localMultiplayer.friendNormY,
+            pos.dx,
+            pos.dy,
+          ) <=
+          _talkRangeInSteps) {
+        return 'Helper is near customer.';
+      }
+    }
+    return null;
+  }
+
+  void _startLocalCafe() {
+    setState(() {
+      _localMultiplayer.startLocalCafe();
+    });
+  }
+
+  void _addFriendHelper() {
+    setState(() {
+      _localMultiplayer.addFriendHelper(
+        playerNormX: _playerNormX,
+        playerNormY: _playerNormY,
+        minX: _minX,
+        maxX: _maxX,
+        minY: _minY,
+        maxY: _maxY,
+      );
+    });
+  }
+
+  void _endMultiplayer() {
+    setState(() {
+      _localMultiplayer.endMultiplayer();
+    });
+  }
+
+  void _moveFriend(int deltaCol, int deltaRow) {
+    if (!_localMultiplayer.isFriendHelperActive) {
+      return;
+    }
+
+    setState(() {
+      if (deltaCol != 0) {
+        _localMultiplayer.friendNormX =
+            (_localMultiplayer.friendNormX + deltaCol * _horizontalStep)
+                .clamp(_minX, _maxX);
+      }
+      if (deltaRow != 0) {
+        _localMultiplayer.friendNormY =
+            (_localMultiplayer.friendNormY + deltaRow * _verticalStep)
+                .clamp(_minY, _maxY);
+      }
+    });
   }
 
   bool _isNear(double normX, double normY) {
@@ -569,12 +648,44 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    MovementControls(
-                                      style: widget.controlStyle,
-                                      onMove: _move,
-                                      onJoyConDirection: _onJoyConDirection,
-                                      joyConKey: _joyConKey,
-                                    ),
+                                    if (_localMultiplayer.isFriendHelperActive &&
+                                        constraints.maxWidth < 420) ...[
+                                      MovementControls(
+                                        style: widget.controlStyle,
+                                        onMove: _move,
+                                        onJoyConDirection: _onJoyConDirection,
+                                        joyConKey: _joyConKey,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      P2MovementControls(onMove: _moveFriend),
+                                    ] else if (_localMultiplayer
+                                        .isFriendHelperActive) ...[
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          MovementControls(
+                                            style: widget.controlStyle,
+                                            onMove: _move,
+                                            onJoyConDirection:
+                                                _onJoyConDirection,
+                                            joyConKey: _joyConKey,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          P2MovementControls(
+                                            onMove: _moveFriend,
+                                          ),
+                                        ],
+                                      ),
+                                    ] else
+                                      MovementControls(
+                                        style: widget.controlStyle,
+                                        onMove: _move,
+                                        onJoyConDirection: _onJoyConDirection,
+                                        joyConKey: _joyConKey,
+                                      ),
                                     const SizedBox(height: 12),
                                     if (_canPlayMinigames) ...[
                                       SizedBox(
@@ -682,6 +793,11 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                     ownedFurnitureIds:
                                         widget.gameState.ownedFurnitureIds,
                                     onPlayerTap: _openCharacterEditor,
+                                    showFriendHelper:
+                                        _localMultiplayer.isFriendHelperActive,
+                                    friendNormX: _localMultiplayer.friendNormX,
+                                    friendNormY: _localMultiplayer.friendNormY,
+                                    friendHelperSpeech: _friendHelperPrompt(),
                                   ),
                                 );
                               },
@@ -695,7 +811,11 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                               child: MultiplayerPanel(
                                 player: widget.player,
                                 gameState: widget.gameState,
+                                multiplayerState: _localMultiplayer,
                                 onClose: _closeMultiplayerPanel,
+                                onStartLocalCafe: _startLocalCafe,
+                                onAddFriendHelper: _addFriendHelper,
+                                onEndMultiplayer: _endMultiplayer,
                                 compact: true,
                               ),
                             ),
@@ -716,7 +836,11 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                               child: MultiplayerPanel(
                                 player: widget.player,
                                 gameState: widget.gameState,
+                                multiplayerState: _localMultiplayer,
                                 onClose: _closeMultiplayerPanel,
+                                onStartLocalCafe: _startLocalCafe,
+                                onAddFriendHelper: _addFriendHelper,
+                                onEndMultiplayer: _endMultiplayer,
                                 compact: true,
                               ),
                             ),

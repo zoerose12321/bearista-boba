@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/active_customer_visit.dart';
 import '../models/customer_visit_state.dart';
+import '../models/local_multiplayer_state.dart';
 import '../models/player_character.dart';
 import 'shop_decoration.dart';
 
@@ -79,6 +80,10 @@ class CartoonShopScene extends StatelessWidget {
     required this.player,
     required this.ownedFurnitureIds,
     this.onPlayerTap,
+    this.showFriendHelper = false,
+    this.friendNormX = 0.44,
+    this.friendNormY = 0.64,
+    this.friendHelperSpeech,
   });
 
   final double playerNormX;
@@ -87,6 +92,10 @@ class CartoonShopScene extends StatelessWidget {
   final PlayerCharacter player;
   final Set<String> ownedFurnitureIds;
   final VoidCallback? onPlayerTap;
+  final bool showFriendHelper;
+  final double friendNormX;
+  final double friendNormY;
+  final String? friendHelperSpeech;
 
   bool _owns(String id) => ownedFurnitureIds.contains(id);
 
@@ -301,6 +310,32 @@ class CartoonShopScene extends StatelessWidget {
                   ),
                 );
               }),
+              if (showFriendHelper) ...[
+                Builder(
+                  builder: (context) {
+                    final friendPos =
+                        _normToScene(friendNormX, friendNormY, size);
+                    return AnimatedPositioned(
+                      duration: const Duration(milliseconds: 150),
+                      curve: Curves.easeOut,
+                      left: friendPos.dx - playerHalfW,
+                      top: friendPos.dy - playerOffsetY,
+                      child: ShopCharacter(
+                        key: const Key('friend_helper_bear'),
+                        furColor: LocalMultiplayerState.friendFurColor,
+                        accentColor: LocalMultiplayerState.friendAccentColor,
+                        muzzleColor: LocalMultiplayerState.friendMuzzleColor,
+                        accessory: BearAccessory.bow,
+                        nameLabel: LocalMultiplayerState.friendName,
+                        specialBadgeEmoji:
+                            LocalMultiplayerState.friendBadgeEmoji,
+                        speechText: friendHelperSpeech,
+                        size: RestaurantSceneScale.playerBearSize * 0.94,
+                      ),
+                    );
+                  },
+                ),
+              ],
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOut,

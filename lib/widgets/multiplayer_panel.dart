@@ -1,27 +1,37 @@
 import 'package:flutter/material.dart';
 
+import '../models/local_multiplayer_state.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
 import 'cute_bear_avatar.dart';
 
-/// Inline multiplayer placeholder panel for ShopWorldPage (v0.1.47+).
+/// Inline multiplayer panel for ShopWorldPage (v0.1.47+).
 class MultiplayerPanel extends StatelessWidget {
   const MultiplayerPanel({
     super.key,
     required this.player,
     required this.gameState,
+    required this.multiplayerState,
     required this.onClose,
+    required this.onStartLocalCafe,
+    required this.onAddFriendHelper,
+    required this.onEndMultiplayer,
     this.compact = false,
   });
 
   final PlayerCharacter player;
   final ShopGameState gameState;
+  final LocalMultiplayerState multiplayerState;
   final VoidCallback onClose;
+  final VoidCallback onStartLocalCafe;
+  final VoidCallback onAddFriendHelper;
+  final VoidCallback onEndMultiplayer;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final mp = multiplayerState;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -67,6 +77,26 @@ class MultiplayerPanel extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondaryContainer
+                          .withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      mp.statusLabel,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF5C4A42),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   Text(
                     'Cozy café visits with friends are on the way!',
                     style: theme.textTheme.titleSmall?.copyWith(
@@ -76,8 +106,11 @@ class MultiplayerPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Multiplayer is being planned. Soon you may host a café, '
-                    'join a friend, and share boba fun together.',
+                    mp.isMultiplayerActive
+                        ? 'Share your café locally — move around together '
+                            'and help greet customers.'
+                        : 'Start a local session to try couch-co-op in your '
+                            'café before online visits arrive.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
                     ),
@@ -112,37 +145,52 @@ class MultiplayerPanel extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  Text(
-                    'Coming soon',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF5C4A42),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
                   MultiplayerOptionTile(
                     title: 'Host a Café',
                     emoji: '🏠',
                     description:
-                        'Open your shop for friends to visit and order together.',
+                        'Open your shop for a shared local shift.',
                     compact: compact,
+                    actionLabel: mp.isMultiplayerActive
+                        ? 'Local café running'
+                        : 'Start Local Café',
+                    onAction: mp.isMultiplayerActive ? null : onStartLocalCafe,
+                    actionKey: const Key('start_local_cafe'),
+                    actionFilled: true,
                   ),
                   const SizedBox(height: 8),
                   MultiplayerOptionTile(
                     title: 'Join a Café',
                     emoji: '🚪',
-                    description:
-                        'Hop into a friend\'s cozy boba shop for a shared shift.',
+                    description: mp.isFriendHelperActive
+                        ? '${LocalMultiplayerState.friendName} is helping in the café.'
+                        : 'Add a second bear to wander the floor with you.',
                     compact: compact,
+                    actionLabel: 'Add Friend Helper',
+                    onAction: mp.isMultiplayerActive && !mp.isFriendHelperActive
+                        ? onAddFriendHelper
+                        : null,
+                    actionKey: const Key('add_friend_helper'),
+                    actionFilled: true,
                   ),
                   const SizedBox(height: 8),
                   MultiplayerOptionTile(
                     title: 'Invite Friends',
                     emoji: '💌',
                     description:
-                        'Send a friendly invite when multiplayer arrives.',
+                        'Online invites and friend codes are coming later.',
                     compact: compact,
+                    actionLabel: 'Online invites later',
+                    onAction: null,
                   ),
+                  if (mp.isMultiplayerActive) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      key: const Key('end_multiplayer'),
+                      onPressed: onEndMultiplayer,
+                      child: const Text('End Multiplayer'),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -159,12 +207,20 @@ class MultiplayerOptionTile extends StatelessWidget {
     required this.title,
     required this.emoji,
     required this.description,
+    required this.actionLabel,
+    this.onAction,
+    this.actionKey,
+    this.actionFilled = false,
     this.compact = false,
   });
 
   final String title;
   final String emoji;
   final String description;
+  final String actionLabel;
+  final VoidCallback? onAction;
+  final Key? actionKey;
+  final bool actionFilled;
   final bool compact;
 
   @override
@@ -211,14 +267,31 @@ class MultiplayerOptionTile extends StatelessWidget {
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
-            child: OutlinedButton(
-              onPressed: null,
-              style: OutlinedButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              ),
-              child: const Text('Coming soon'),
-            ),
+            child: actionFilled
+                ? FilledButton(
+                    key: actionKey,
+                    onPressed: onAction,
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: Text(actionLabel),
+                  )
+                : OutlinedButton(
+                    key: actionKey,
+                    onPressed: onAction,
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                    ),
+                    child: Text(actionLabel),
+                  ),
           ),
         ],
       ),
