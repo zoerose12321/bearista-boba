@@ -7,11 +7,13 @@ import 'package:flutter/services.dart';
 import '../data/starter_customers.dart';
 import '../models/active_customer_visit.dart';
 import '../models/seating_assignment.dart';
+import '../models/control_style.dart';
 import '../models/customer_visit_state.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
 import '../widgets/ad_placeholder_bar.dart';
 import '../widgets/cartoon_shop_scene.dart';
+import '../widgets/movement_controls.dart';
 import '../widgets/multiplayer_panel.dart';
 import '../widgets/shop_decoration.dart';
 import 'bearista_shop_page.dart';
@@ -25,10 +27,12 @@ class ShopWorldPage extends StatefulWidget {
     super.key,
     required this.player,
     required this.gameState,
+    this.controlStyle = ControlStyle.arrows,
   });
 
   final PlayerCharacter player;
   final ShopGameState gameState;
+  final ControlStyle controlStyle;
 
   @override
   State<ShopWorldPage> createState() => _ShopWorldPageState();
@@ -501,7 +505,10 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    ShopDpad(onMove: _move),
+                                    MovementControls(
+                                      style: widget.controlStyle,
+                                      onMove: _move,
+                                    ),
                                     const SizedBox(height: 12),
                                     if (_canPlayMinigames) ...[
                                       SizedBox(
