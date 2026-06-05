@@ -28,33 +28,68 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: const Padding(
-                padding: EdgeInsets.only(top: 4, right: 4),
-                child: MusicToggleButton(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 40, 0),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final stackedHeader = constraints.maxWidth < 360;
+
+                  if (stackedHeader) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: EdgeInsets.only(right: 16),
+                            child: MusicToggleButton(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _ControlStyleSelector(
+                          selected: _controlStyle,
+                          onSelected: _selectControlStyle,
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth.clamp(0, 480),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Center(
+                              child: _ControlStyleSelector(
+                                selected: _controlStyle,
+                                onSelected: _selectControlStyle,
+                              ),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.only(left: 12, top: 2),
+                            child: MusicToggleButton(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-            Column(
-              children: [
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-                    child: _ControlStyleSelector(
-                      selected: _controlStyle,
-                      onSelected: _selectControlStyle,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                           Text(
                             '🧋',
                             style: theme.textTheme.displayLarge,
@@ -107,12 +142,10 @@ class _HomePageState extends State<HomePage> {
                               child: Text('Start'),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ],
         ),
