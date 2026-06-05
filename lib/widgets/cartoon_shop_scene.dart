@@ -326,9 +326,9 @@ class CartoonShopScene extends StatelessWidget {
                         accentColor: LocalMultiplayerState.friendAccentColor,
                         muzzleColor: LocalMultiplayerState.friendMuzzleColor,
                         accessory: BearAccessory.bow,
-                        nameLabel: LocalMultiplayerState.friendName,
+                        nameLabel: LocalMultiplayerState.helperName,
                         specialBadgeEmoji:
-                            LocalMultiplayerState.friendBadgeEmoji,
+                            LocalMultiplayerState.helperBadgeEmoji,
                         speechText: friendHelperSpeech,
                         size: RestaurantSceneScale.playerBearSize * 0.94,
                       ),

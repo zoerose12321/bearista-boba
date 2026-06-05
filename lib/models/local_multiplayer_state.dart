@@ -7,18 +7,18 @@ class LocalMultiplayerState {
   double friendNormX = 0.44;
   double friendNormY = 0.64;
 
-  static const friendName = 'Friend Bear';
+  static const helperName = 'Helper Bear';
   static const friendFurColor = Color(0xFFB8D4A8);
   static const friendAccentColor = Color(0xFF7EB8D4);
   static const friendMuzzleColor = Color(0xFFF0FAF0);
-  static const friendBadgeEmoji = 'P2';
+  static const helperBadgeEmoji = '✨';
 
   String get statusLabel {
     if (!isMultiplayerActive) {
       return 'Solo Café';
     }
     if (isFriendHelperActive) {
-      return 'Friend Helper Joined';
+      return 'Helper Bear Active';
     }
     return 'Local Multiplayer Active';
   }

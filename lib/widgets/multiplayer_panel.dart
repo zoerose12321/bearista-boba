@@ -106,11 +106,12 @@ class MultiplayerPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    mp.isMultiplayerActive
-                        ? 'Share your café locally — move around together '
-                            'and help greet customers.'
-                        : 'Start a local session to try couch-co-op in your '
-                            'café before online visits arrive.',
+                    mp.isFriendHelperActive
+                        ? 'Your helper is taking café orders automatically.'
+                        : mp.isMultiplayerActive
+                            ? 'Activate Helper Bear to serve waiting customers.'
+                            : 'Start a local session, then let Helper Bear '
+                                'serve customers while you run the floor.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
                     ),
@@ -160,13 +161,13 @@ class MultiplayerPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   MultiplayerOptionTile(
-                    title: 'Join a Café',
-                    emoji: '🚪',
+                    title: 'Helper Bear',
+                    emoji: '🐻',
                     description: mp.isFriendHelperActive
-                        ? '${LocalMultiplayerState.friendName} is helping in the café.'
-                        : 'Add a second bear to wander the floor with you.',
+                        ? '${LocalMultiplayerState.helperName} is serving customers for you.'
+                        : 'Summon an NPC helper to take orders and serve drinks.',
                     compact: compact,
-                    actionLabel: 'Add Friend Helper',
+                    actionLabel: 'Activate Helper Bear',
                     onAction: mp.isMultiplayerActive && !mp.isFriendHelperActive
                         ? onAddFriendHelper
                         : null,

@@ -10,15 +10,18 @@ import '../models/active_customer_visit.dart';
 import '../models/seating_assignment.dart';
 import '../models/control_style.dart';
 import '../models/customer_visit_state.dart';
+import '../models/helper_npc_state.dart';
 import '../models/local_multiplayer_state.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
+import '../services/coin_reward_service.dart';
+import '../services/helper_npc_service.dart';
+import '../services/sound_effects_service.dart';
 import '../widgets/ad_placeholder_bar.dart';
 import '../widgets/cartoon_shop_scene.dart';
 import '../widgets/joy_con_control.dart';
 import '../widgets/movement_controls.dart';
 import '../widgets/multiplayer_panel.dart';
-import '../widgets/p2_movement_controls.dart';
 import '../widgets/shop_decoration.dart';
 import 'bearista_shop_page.dart';
 import 'character_creator_page.dart';
@@ -75,6 +78,10 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   bool _isNavigatingToStore = false;
   bool _multiplayerPanelOpen = false;
   final LocalMultiplayerState _localMultiplayer = LocalMultiplayerState();
+  final HelperNpcState _helperNpc = HelperNpcState();
+  Timer? _helperNpcTimer;
+  Timer? _helperWorkTimer;
+  int? _playerTalkSlotIndex;
 
   final GlobalKey<JoyConControlState> _joyConKey = GlobalKey<JoyConControlState>();
   Timer? _joyConMoveTimer;
@@ -116,6 +123,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   @override
   void dispose() {
     _stopJoyConMovement(resetKnob: false);
+    _stopHelperNpc();
     for (final controller in _walkControllers) {
       controller.dispose();
     }
@@ -254,28 +262,23 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     return dx / _horizontalStep + dy / _verticalStep;
   }
 
-  String? _friendHelperPrompt() {
+  String? _helperSpeechBubble() {
     if (!_localMultiplayer.isFriendHelperActive) {
       return null;
     }
-
-    for (final visit in _visits) {
-      if (!visit.isSeated) {
-        continue;
-      }
-      final pos = _positionForVisit(visit);
-      if (_distanceBetween(
-            _localMultiplayer.friendNormX,
-            _localMultiplayer.friendNormY,
-            pos.dx,
-            pos.dy,
-          ) <=
-          _talkRangeInSteps) {
-        return 'Helper is near customer.';
-      }
-    }
-    return null;
+    final message = _helperNpc.statusMessage;
+    return message.isEmpty ? null : message;
   }
+
+  bool _visitBlockedByHelper(ActiveCustomerVisit visit) {
+    return _helperNpc.isHandlingSlot(visit.slotIndex);
+  }
+
+  double _visitNormX(ActiveCustomerVisit visit) =>
+      _positionForVisit(visit).dx;
+
+  double _visitNormY(ActiveCustomerVisit visit) =>
+      _positionForVisit(visit).dy;
 
   void _startLocalCafe() {
     setState(() {
@@ -293,31 +296,208 @@ class _ShopWorldPageState extends State<ShopWorldPage>
         minY: _minY,
         maxY: _maxY,
       );
+      _helperNpc.activateIdle();
     });
+    _startHelperNpcLoop();
   }
 
   void _endMultiplayer() {
+    _stopHelperNpc();
     setState(() {
       _localMultiplayer.endMultiplayer();
     });
   }
 
-  void _moveFriend(int deltaCol, int deltaRow) {
+  void _startHelperNpcLoop() {
+    _helperNpcTimer?.cancel();
     if (!_localMultiplayer.isFriendHelperActive) {
       return;
     }
+    _helperNpcTimer = Timer.periodic(
+      const Duration(milliseconds: 120),
+      (_) => _tickHelperNpc(),
+    );
+  }
+
+  void _pauseHelperNpc() {
+    _helperNpcTimer?.cancel();
+    _helperNpcTimer = null;
+    _helperWorkTimer?.cancel();
+    _helperWorkTimer = null;
+    if (_localMultiplayer.isFriendHelperActive &&
+        _helperNpc.phase != HelperNpcPhase.inactive) {
+      _helperNpc.phase = HelperNpcPhase.idle;
+      _helperNpc.targetSlotIndex = null;
+      _helperNpc.statusMessage = 'Looking for orders…';
+    }
+  }
+
+  void _stopHelperNpc() {
+    _pauseHelperNpc();
+    _helperNpc.reset();
+    _playerTalkSlotIndex = null;
+  }
+
+  void _resumeHelperNpc() {
+    if (!_localMultiplayer.isFriendHelperActive) {
+      return;
+    }
+    if (_helperNpc.phase == HelperNpcPhase.inactive) {
+      _helperNpc.activateIdle();
+    }
+    _startHelperNpcLoop();
+  }
+
+  void _tickHelperNpc() {
+    if (!mounted || !_localMultiplayer.isFriendHelperActive) {
+      return;
+    }
+
+    if (_helperNpc.phase == HelperNpcPhase.idle) {
+      if (_helperWorkTimer?.isActive ?? false) {
+        return;
+      }
+
+      final visit = HelperNpcService.pickReadyVisit(
+        visits: _visits,
+        helper: _helperNpc,
+        playerTalkSlot: _playerTalkSlotIndex,
+        helperNormX: _localMultiplayer.friendNormX,
+        helperNormY: _localMultiplayer.friendNormY,
+        visitNormX: _visitNormX,
+        visitNormY: _visitNormY,
+        horizontalStep: _horizontalStep,
+        verticalStep: _verticalStep,
+      );
+
+      if (visit == null) {
+        if (_helperNpc.statusMessage.isEmpty) {
+          setState(() {
+            _helperNpc.statusMessage = 'Looking for orders…';
+          });
+        }
+        return;
+      }
+
+      final customerPos = _positionForVisit(visit);
+      setState(() {
+        _helperNpc.targetSlotIndex = visit.slotIndex;
+        _helperNpc.targetNormX = (customerPos.dx + HelperNpcService.standOffsetX)
+            .clamp(_minX, _maxX);
+        _helperNpc.targetNormY = (customerPos.dy + HelperNpcService.standOffsetY)
+            .clamp(_minY, _maxY);
+        _helperNpc.phase = HelperNpcPhase.walkingToCustomer;
+        _helperNpc.statusMessage = "I'll help!";
+      });
+      return;
+    }
+
+    if (_helperNpc.phase == HelperNpcPhase.walkingToCustomer) {
+      if (HelperNpcService.isNearTarget(
+        helperNormX: _localMultiplayer.friendNormX,
+        helperNormY: _localMultiplayer.friendNormY,
+        targetNormX: _helperNpc.targetNormX,
+        targetNormY: _helperNpc.targetNormY,
+        horizontalStep: _horizontalStep,
+        verticalStep: _verticalStep,
+      )) {
+        _beginHelperOrderWork();
+        return;
+      }
+
+      final step = HelperNpcService.stepToward(
+        fromX: _localMultiplayer.friendNormX,
+        fromY: _localMultiplayer.friendNormY,
+        toX: _helperNpc.targetNormX,
+        toY: _helperNpc.targetNormY,
+        horizontalStep: _horizontalStep,
+        verticalStep: _verticalStep,
+        minX: _minX,
+        maxX: _maxX,
+        minY: _minY,
+        maxY: _maxY,
+      );
+      setState(() {
+        _localMultiplayer.friendNormX = step.x;
+        _localMultiplayer.friendNormY = step.y;
+      });
+    }
+  }
+
+  void _beginHelperOrderWork() {
+    _helperNpcTimer?.cancel();
+    _helperNpcTimer = null;
 
     setState(() {
-      if (deltaCol != 0) {
-        _localMultiplayer.friendNormX =
-            (_localMultiplayer.friendNormX + deltaCol * _horizontalStep)
-                .clamp(_minX, _maxX);
+      _helperNpc.phase = HelperNpcPhase.takingOrder;
+      _helperNpc.statusMessage = 'Taking order…';
+    });
+
+    _helperWorkTimer = Timer(const Duration(milliseconds: 800), () {
+      if (!mounted || !_localMultiplayer.isFriendHelperActive) {
+        return;
       }
-      if (deltaRow != 0) {
-        _localMultiplayer.friendNormY =
-            (_localMultiplayer.friendNormY + deltaRow * _verticalStep)
-                .clamp(_minY, _maxY);
+      setState(() {
+        _helperNpc.phase = HelperNpcPhase.makingDrink;
+        _helperNpc.statusMessage = 'Making drink…';
+      });
+
+      _helperWorkTimer = Timer(const Duration(milliseconds: 2200), () {
+        if (!mounted || !_localMultiplayer.isFriendHelperActive) {
+          return;
+        }
+        setState(() {
+          _helperNpc.phase = HelperNpcPhase.servingDrink;
+          _helperNpc.statusMessage = 'Serving drink…';
+        });
+
+        _helperWorkTimer = Timer(const Duration(milliseconds: 500), () {
+          if (!mounted || !_localMultiplayer.isFriendHelperActive) {
+            return;
+          }
+          _completeHelperOrder();
+        });
+      });
+    });
+  }
+
+  void _completeHelperOrder() {
+    final slotIndex = _helperNpc.targetSlotIndex;
+    if (slotIndex == null) {
+      _helperNpc.activateIdle();
+      _startHelperNpcLoop();
+      return;
+    }
+
+    final visit = _visits[slotIndex];
+    if (!visit.canTalk) {
+      setState(() {
+        _helperNpc.activateIdle();
+      });
+      _startHelperNpcLoop();
+      return;
+    }
+
+    final reward = CoinRewardService.rollReward();
+    visit.orderCompleted = true;
+    visit.coinReward = reward;
+    widget.gameState.coins += reward;
+    SoundEffectsService.instance.playCoinDing();
+
+    setState(() {
+      _helperNpc.statusMessage = 'Served! +$reward';
+    });
+
+    _replaceVisit(slotIndex);
+
+    _helperWorkTimer = Timer(const Duration(milliseconds: 1400), () {
+      if (!mounted || !_localMultiplayer.isFriendHelperActive) {
+        return;
       }
+      setState(() {
+        _helperNpc.activateIdle();
+      });
+      _startHelperNpcLoop();
     });
   }
 
@@ -331,6 +511,12 @@ class _ShopWorldPageState extends State<ShopWorldPage>
 
     for (final visit in _visits) {
       if (!visit.canTalk) {
+        continue;
+      }
+      if (_visitBlockedByHelper(visit)) {
+        continue;
+      }
+      if (_playerTalkSlotIndex == visit.slotIndex) {
         continue;
       }
 
@@ -463,6 +649,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
 
   Future<void> _openStore() async {
     _pauseJoyConForNavigation();
+    _pauseHelperNpc();
     _isNavigatingToStore = true;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -475,6 +662,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     if (mounted) {
       _isNavigatingToStore = false;
       _wasOnEntry = _isOnEntry;
+      _resumeHelperNpc();
       setState(() {});
     }
   }
@@ -504,6 +692,8 @@ class _ShopWorldPageState extends State<ShopWorldPage>
 
   Future<void> _openBearistaShop(ActiveCustomerVisit visit) async {
     _pauseJoyConForNavigation();
+    _pauseHelperNpc();
+    _playerTalkSlotIndex = visit.slotIndex;
     final completedBefore = visit.orderCompleted;
 
     await Navigator.of(context).push<void>(
@@ -522,14 +712,17 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       ),
     );
 
+    _playerTalkSlotIndex = null;
     if (visit.orderCompleted && !completedBefore) {
       _replaceVisit(visit.slotIndex);
     }
+    _resumeHelperNpc();
     setState(() {});
   }
 
   Future<void> _openMinigames() async {
     _pauseJoyConForNavigation();
+    _pauseHelperNpc();
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (context) => MinigamesPage(
@@ -539,22 +732,26 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       ),
     );
     if (mounted) {
+      _resumeHelperNpc();
       setState(() {});
     }
   }
 
   Future<void> _openShopUpgrades() async {
     _pauseJoyConForNavigation();
+    _pauseHelperNpc();
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (context) => ShopUpgradesPage(gameState: widget.gameState),
       ),
     );
+    _resumeHelperNpc();
     setState(() {});
   }
 
   Future<void> _openCharacterEditor() async {
     _pauseJoyConForNavigation();
+    _pauseHelperNpc();
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (context) => CharacterCreatorPage(
@@ -562,6 +759,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
         ),
       ),
     );
+    _resumeHelperNpc();
     setState(() {});
   }
 
@@ -648,44 +846,12 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (_localMultiplayer.isFriendHelperActive &&
-                                        constraints.maxWidth < 420) ...[
-                                      MovementControls(
-                                        style: widget.controlStyle,
-                                        onMove: _move,
-                                        onJoyConDirection: _onJoyConDirection,
-                                        joyConKey: _joyConKey,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      P2MovementControls(onMove: _moveFriend),
-                                    ] else if (_localMultiplayer
-                                        .isFriendHelperActive) ...[
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          MovementControls(
-                                            style: widget.controlStyle,
-                                            onMove: _move,
-                                            onJoyConDirection:
-                                                _onJoyConDirection,
-                                            joyConKey: _joyConKey,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          P2MovementControls(
-                                            onMove: _moveFriend,
-                                          ),
-                                        ],
-                                      ),
-                                    ] else
-                                      MovementControls(
-                                        style: widget.controlStyle,
-                                        onMove: _move,
-                                        onJoyConDirection: _onJoyConDirection,
-                                        joyConKey: _joyConKey,
-                                      ),
+                                    MovementControls(
+                                      style: widget.controlStyle,
+                                      onMove: _move,
+                                      onJoyConDirection: _onJoyConDirection,
+                                      joyConKey: _joyConKey,
+                                    ),
                                     const SizedBox(height: 12),
                                     if (_canPlayMinigames) ...[
                                       SizedBox(
@@ -797,7 +963,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                         _localMultiplayer.isFriendHelperActive,
                                     friendNormX: _localMultiplayer.friendNormX,
                                     friendNormY: _localMultiplayer.friendNormY,
-                                    friendHelperSpeech: _friendHelperPrompt(),
+                                    friendHelperSpeech: _helperSpeechBubble(),
                                   ),
                                 );
                               },
