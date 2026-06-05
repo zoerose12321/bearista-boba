@@ -77,7 +77,8 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   Timer? _joyConMoveTimer;
   int _joyConDeltaCol = 0;
   int _joyConDeltaRow = 0;
-  static const _joyConMoveInterval = Duration(milliseconds: 110);
+  static const _joyConMoveInterval = Duration(milliseconds: 150);
+  static const _joyConStepScale = 0.75;
 
   /// Walk-path start — clear of entry door, open floor toward counter.
   Listenable get _allWalkAnimations =>
@@ -131,7 +132,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       return;
     }
 
-    _move(deltaCol, deltaRow);
+    _moveJoyCon(deltaCol, deltaRow);
     _joyConMoveTimer = Timer.periodic(_joyConMoveInterval, (_) {
       if (!mounted) {
         _stopJoyConMovement(resetKnob: false);
@@ -141,7 +142,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
         _stopJoyConMovement();
         return;
       }
-      _move(_joyConDeltaCol, _joyConDeltaRow);
+      _moveJoyCon(_joyConDeltaCol, _joyConDeltaRow);
     });
   }
 
@@ -342,13 +343,21 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   }
 
   void _move(int deltaCol, int deltaRow) {
+    _applyMove(deltaCol, deltaRow, stepScale: 1.0);
+  }
+
+  void _moveJoyCon(int deltaCol, int deltaRow) {
+    _applyMove(deltaCol, deltaRow, stepScale: _joyConStepScale);
+  }
+
+  void _applyMove(int deltaCol, int deltaRow, {required double stepScale}) {
     setState(() {
       if (deltaCol != 0) {
-        _playerNormX = (_playerNormX + deltaCol * _horizontalStep)
+        _playerNormX = (_playerNormX + deltaCol * _horizontalStep * stepScale)
             .clamp(_minX, _maxX);
       }
       if (deltaRow != 0) {
-        _playerNormY = (_playerNormY + deltaRow * _verticalStep)
+        _playerNormY = (_playerNormY + deltaRow * _verticalStep * stepScale)
             .clamp(_minY, _maxY);
       }
     });
