@@ -346,10 +346,12 @@ class ShopWorldHeader extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.title,
     required this.coins,
+    this.onMultiplayerPressed,
   });
 
   final String title;
   final int coins;
+  final VoidCallback? onMultiplayerPressed;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -358,43 +360,128 @@ class ShopWorldHeader extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return SizedBox(
-      height: kToolbarHeight,
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.maybePop(context),
-            tooltip: 'Back',
-          ),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const MusicToggleButton(),
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.tertiary.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                '🪙 $coins',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compactMultiplayer = constraints.maxWidth < 420;
+
+        return SizedBox(
+          height: kToolbarHeight,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.maybePop(context),
+                  tooltip: 'Back',
                 ),
               ),
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: compactMultiplayer ? 108 : 148,
+                ),
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (onMultiplayerPressed != null)
+                      _MultiplayerHeaderButton(
+                        onPressed: onMultiplayerPressed!,
+                        compact: compactMultiplayer,
+                      ),
+                    const MusicToggleButton(),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.tertiary
+                              .withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          '🪙 $coins',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MultiplayerHeaderButton extends StatelessWidget {
+  const _MultiplayerHeaderButton({
+    required this.onPressed,
+    required this.compact,
+  });
+
+  final VoidCallback onPressed;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (compact) {
+      return IconButton(
+        key: const Key('multiplayer_button'),
+        onPressed: onPressed,
+        tooltip: 'Multiplayer',
+        icon: const Text('👥', style: TextStyle(fontSize: 18)),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 2),
+      child: Material(
+        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          key: const Key('multiplayer_button'),
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('👥', style: TextStyle(fontSize: 14)),
+                const SizedBox(width: 4),
+                Text(
+                  'Multiplayer',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF5C4A42),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

@@ -16,6 +16,7 @@ import '../widgets/shop_decoration.dart';
 import 'bearista_shop_page.dart';
 import 'character_creator_page.dart';
 import 'minigames_page.dart';
+import 'multiplayer_page.dart';
 import 'shop_upgrades_page.dart';
 import 'store_page.dart';
 
@@ -416,6 +417,20 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     setState(() {});
   }
 
+  Future<void> _openMultiplayer() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => MultiplayerPage(
+          player: widget.player,
+          gameState: widget.gameState,
+        ),
+      ),
+    );
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   String _talkHint(ActiveCustomerVisit? talkTarget) {
     final anyStillWalking = _visits.any(
       (visit) =>
@@ -466,6 +481,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                               child: ShopWorldHeader(
                                 title: '${widget.player.displayName}\'s Shop',
                                 coins: widget.gameState.coins,
+                                onMultiplayerPressed: _openMultiplayer,
                               ),
                             ),
                           ),
