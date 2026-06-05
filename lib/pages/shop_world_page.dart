@@ -263,7 +263,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   }
 
   String? _helperSpeechBubble() {
-    if (!_localMultiplayer.isFriendHelperActive) {
+    if (!_localMultiplayer.isHelperActive) {
       return null;
     }
     final message = _helperNpc.statusMessage;
@@ -286,9 +286,9 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     });
   }
 
-  void _addFriendHelper() {
+  void _activateHelperBear() {
     setState(() {
-      _localMultiplayer.addFriendHelper(
+      _localMultiplayer.activateHelper(
         playerNormX: _playerNormX,
         playerNormY: _playerNormY,
         minX: _minX,
@@ -301,16 +301,22 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     _startHelperNpcLoop();
   }
 
-  void _endMultiplayer() {
+  void _sendHelperHome() {
     _stopHelperNpc();
     setState(() {
-      _localMultiplayer.endMultiplayer();
+      _localMultiplayer.sendHelperHome();
+    });
+  }
+
+  void _endLocalCafe() {
+    setState(() {
+      _localMultiplayer.endLocalCafe();
     });
   }
 
   void _startHelperNpcLoop() {
     _helperNpcTimer?.cancel();
-    if (!_localMultiplayer.isFriendHelperActive) {
+    if (!_localMultiplayer.isHelperActive) {
       return;
     }
     _helperNpcTimer = Timer.periodic(
@@ -324,7 +330,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     _helperNpcTimer = null;
     _helperWorkTimer?.cancel();
     _helperWorkTimer = null;
-    if (_localMultiplayer.isFriendHelperActive &&
+    if (_localMultiplayer.isHelperActive &&
         _helperNpc.phase != HelperNpcPhase.inactive) {
       _helperNpc.phase = HelperNpcPhase.idle;
       _helperNpc.targetSlotIndex = null;
@@ -339,7 +345,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   }
 
   void _resumeHelperNpc() {
-    if (!_localMultiplayer.isFriendHelperActive) {
+    if (!_localMultiplayer.isHelperActive) {
       return;
     }
     if (_helperNpc.phase == HelperNpcPhase.inactive) {
@@ -349,7 +355,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   }
 
   void _tickHelperNpc() {
-    if (!mounted || !_localMultiplayer.isFriendHelperActive) {
+    if (!mounted || !_localMultiplayer.isHelperActive) {
       return;
     }
 
@@ -434,7 +440,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     });
 
     _helperWorkTimer = Timer(const Duration(milliseconds: 800), () {
-      if (!mounted || !_localMultiplayer.isFriendHelperActive) {
+      if (!mounted || !_localMultiplayer.isHelperActive) {
         return;
       }
       setState(() {
@@ -443,7 +449,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       });
 
       _helperWorkTimer = Timer(const Duration(milliseconds: 2200), () {
-        if (!mounted || !_localMultiplayer.isFriendHelperActive) {
+        if (!mounted || !_localMultiplayer.isHelperActive) {
           return;
         }
         setState(() {
@@ -452,7 +458,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
         });
 
         _helperWorkTimer = Timer(const Duration(milliseconds: 500), () {
-          if (!mounted || !_localMultiplayer.isFriendHelperActive) {
+          if (!mounted || !_localMultiplayer.isHelperActive) {
             return;
           }
           _completeHelperOrder();
@@ -491,7 +497,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     _replaceVisit(slotIndex);
 
     _helperWorkTimer = Timer(const Duration(milliseconds: 1400), () {
-      if (!mounted || !_localMultiplayer.isFriendHelperActive) {
+      if (!mounted || !_localMultiplayer.isHelperActive) {
         return;
       }
       setState(() {
@@ -960,7 +966,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                         widget.gameState.ownedFurnitureIds,
                                     onPlayerTap: _openCharacterEditor,
                                     showFriendHelper:
-                                        _localMultiplayer.isFriendHelperActive,
+                                        _localMultiplayer.isHelperActive,
                                     friendNormX: _localMultiplayer.friendNormX,
                                     friendNormY: _localMultiplayer.friendNormY,
                                     friendHelperSpeech: _helperSpeechBubble(),
@@ -979,9 +985,10 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                 gameState: widget.gameState,
                                 multiplayerState: _localMultiplayer,
                                 onClose: _closeMultiplayerPanel,
+                                onActivateHelper: _activateHelperBear,
+                                onSendHelperHome: _sendHelperHome,
                                 onStartLocalCafe: _startLocalCafe,
-                                onAddFriendHelper: _addFriendHelper,
-                                onEndMultiplayer: _endMultiplayer,
+                                onEndLocalCafe: _endLocalCafe,
                                 compact: true,
                               ),
                             ),
@@ -1004,9 +1011,10 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                 gameState: widget.gameState,
                                 multiplayerState: _localMultiplayer,
                                 onClose: _closeMultiplayerPanel,
+                                onActivateHelper: _activateHelperBear,
+                                onSendHelperHome: _sendHelperHome,
                                 onStartLocalCafe: _startLocalCafe,
-                                onAddFriendHelper: _addFriendHelper,
-                                onEndMultiplayer: _endMultiplayer,
+                                onEndLocalCafe: _endLocalCafe,
                                 compact: true,
                               ),
                             ),

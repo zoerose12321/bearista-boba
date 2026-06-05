@@ -48,10 +48,8 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
               gameState: widget.gameState,
               multiplayerState: _multiplayerState,
               onClose: () => Navigator.of(context).maybePop(),
-              onStartLocalCafe: () =>
-                  setState(() => _multiplayerState.startLocalCafe()),
-              onAddFriendHelper: () => setState(() {
-                _multiplayerState.addFriendHelper(
+              onActivateHelper: () => setState(() {
+                _multiplayerState.activateHelper(
                   playerNormX: 0.36,
                   playerNormY: 0.68,
                   minX: 0.36,
@@ -60,8 +58,12 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
                   maxY: 0.84,
                 );
               }),
-              onEndMultiplayer: () =>
-                  setState(() => _multiplayerState.endMultiplayer()),
+              onSendHelperHome: () =>
+                  setState(() => _multiplayerState.sendHelperHome()),
+              onStartLocalCafe: () =>
+                  setState(() => _multiplayerState.startLocalCafe()),
+              onEndLocalCafe: () =>
+                  setState(() => _multiplayerState.endLocalCafe()),
             ),
           ),
         ),

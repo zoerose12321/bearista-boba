@@ -13,9 +13,10 @@ class MultiplayerPanel extends StatelessWidget {
     required this.gameState,
     required this.multiplayerState,
     required this.onClose,
-    required this.onStartLocalCafe,
-    required this.onAddFriendHelper,
-    required this.onEndMultiplayer,
+    required this.onActivateHelper,
+    required this.onSendHelperHome,
+    this.onStartLocalCafe,
+    this.onEndLocalCafe,
     this.compact = false,
   });
 
@@ -23,9 +24,10 @@ class MultiplayerPanel extends StatelessWidget {
   final ShopGameState gameState;
   final LocalMultiplayerState multiplayerState;
   final VoidCallback onClose;
-  final VoidCallback onStartLocalCafe;
-  final VoidCallback onAddFriendHelper;
-  final VoidCallback onEndMultiplayer;
+  final VoidCallback onActivateHelper;
+  final VoidCallback onSendHelperHome;
+  final VoidCallback? onStartLocalCafe;
+  final VoidCallback? onEndLocalCafe;
   final bool compact;
 
   @override
@@ -106,12 +108,10 @@ class MultiplayerPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    mp.isFriendHelperActive
+                    mp.isHelperActive
                         ? 'Your helper is taking café orders automatically.'
-                        : mp.isMultiplayerActive
-                            ? 'Activate Helper Bear to serve waiting customers.'
-                            : 'Start a local session, then let Helper Bear '
-                                'serve customers while you run the floor.',
+                        : 'Call a helper bear to take orders and serve drinks '
+                            'while you run the floor.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
                     ),
@@ -147,32 +147,40 @@ class MultiplayerPanel extends StatelessWidget {
                   ],
                   const SizedBox(height: 12),
                   MultiplayerOptionTile(
+                    title: 'Helper Bear',
+                    emoji: '🐻',
+                    description: mp.isHelperActive
+                        ? '${LocalMultiplayerState.helperName} is serving customers for you.'
+                        : 'Call a helper bear to take orders and serve drinks.',
+                    compact: compact,
+                    actionLabel: mp.isHelperActive
+                        ? 'Helper Active'
+                        : 'Activate Helper Bear',
+                    onAction: mp.isHelperActive ? null : onActivateHelper,
+                    actionKey: const Key('add_friend_helper'),
+                    actionFilled: true,
+                  ),
+                  if (mp.isHelperActive) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      key: const Key('send_helper_home'),
+                      onPressed: onSendHelperHome,
+                      child: const Text('Send Helper Home'),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  MultiplayerOptionTile(
                     title: 'Host a Café',
                     emoji: '🏠',
                     description:
-                        'Open your shop for a shared local shift.',
+                        'A shared local shift with friends — coming soon.',
                     compact: compact,
-                    actionLabel: mp.isMultiplayerActive
+                    actionLabel: mp.isLocalCafeActive
                         ? 'Local café running'
                         : 'Start Local Café',
-                    onAction: mp.isMultiplayerActive ? null : onStartLocalCafe,
+                    onAction: mp.isLocalCafeActive ? null : onStartLocalCafe,
                     actionKey: const Key('start_local_cafe'),
-                    actionFilled: true,
-                  ),
-                  const SizedBox(height: 8),
-                  MultiplayerOptionTile(
-                    title: 'Helper Bear',
-                    emoji: '🐻',
-                    description: mp.isFriendHelperActive
-                        ? '${LocalMultiplayerState.helperName} is serving customers for you.'
-                        : 'Summon an NPC helper to take orders and serve drinks.',
-                    compact: compact,
-                    actionLabel: 'Activate Helper Bear',
-                    onAction: mp.isMultiplayerActive && !mp.isFriendHelperActive
-                        ? onAddFriendHelper
-                        : null,
-                    actionKey: const Key('add_friend_helper'),
-                    actionFilled: true,
+                    actionFilled: false,
                   ),
                   const SizedBox(height: 8),
                   MultiplayerOptionTile(
@@ -184,12 +192,12 @@ class MultiplayerPanel extends StatelessWidget {
                     actionLabel: 'Online invites later',
                     onAction: null,
                   ),
-                  if (mp.isMultiplayerActive) ...[
+                  if (mp.isLocalCafeActive && onEndLocalCafe != null) ...[
                     const SizedBox(height: 12),
                     OutlinedButton(
-                      key: const Key('end_multiplayer'),
-                      onPressed: onEndMultiplayer,
-                      child: const Text('End Multiplayer'),
+                      key: const Key('end_local_cafe'),
+                      onPressed: onEndLocalCafe,
+                      child: const Text('End Local Café'),
                     ),
                   ],
                 ],

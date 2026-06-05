@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Local couch-co-op multiplayer state for ShopWorldPage (v0.1.52+).
+/// Local multiplayer and helper state for ShopWorldPage (v0.1.52+).
 class LocalMultiplayerState {
-  bool isMultiplayerActive = false;
-  bool isFriendHelperActive = false;
+  bool isLocalCafeActive = false;
+  bool isHelperActive = false;
   double friendNormX = 0.44;
   double friendNormY = 0.64;
 
@@ -14,20 +14,24 @@ class LocalMultiplayerState {
   static const helperBadgeEmoji = '✨';
 
   String get statusLabel {
-    if (!isMultiplayerActive) {
-      return 'Solo Café';
-    }
-    if (isFriendHelperActive) {
+    if (isHelperActive) {
       return 'Helper Bear Active';
     }
-    return 'Local Multiplayer Active';
+    if (isLocalCafeActive) {
+      return 'Local Multiplayer Active';
+    }
+    return 'Solo Café';
   }
 
   void startLocalCafe() {
-    isMultiplayerActive = true;
+    isLocalCafeActive = true;
   }
 
-  void addFriendHelper({
+  void endLocalCafe() {
+    isLocalCafeActive = false;
+  }
+
+  void activateHelper({
     required double playerNormX,
     required double playerNormY,
     required double minX,
@@ -35,14 +39,12 @@ class LocalMultiplayerState {
     required double minY,
     required double maxY,
   }) {
-    isMultiplayerActive = true;
-    isFriendHelperActive = true;
+    isHelperActive = true;
     friendNormX = (playerNormX + 0.08).clamp(minX, maxX);
     friendNormY = (playerNormY + 0.05).clamp(minY, maxY);
   }
 
-  void endMultiplayer() {
-    isMultiplayerActive = false;
-    isFriendHelperActive = false;
+  void sendHelperHome() {
+    isHelperActive = false;
   }
 }
