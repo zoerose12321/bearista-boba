@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui' show lerpDouble;
 
@@ -13,6 +14,7 @@ import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
 import '../widgets/ad_placeholder_bar.dart';
 import '../widgets/cartoon_shop_scene.dart';
+import '../widgets/joy_con_control.dart';
 import '../widgets/movement_controls.dart';
 import '../widgets/multiplayer_panel.dart';
 import '../widgets/shop_decoration.dart';
@@ -71,6 +73,12 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   bool _isNavigatingToStore = false;
   bool _multiplayerPanelOpen = false;
 
+  final GlobalKey<JoyConControlState> _joyConKey = GlobalKey<JoyConControlState>();
+  Timer? _joyConMoveTimer;
+  int _joyConDeltaCol = 0;
+  int _joyConDeltaRow = 0;
+  static const _joyConMoveInterval = Duration(milliseconds: 110);
+
   /// Walk-path start — clear of entry door, open floor toward counter.
   Listenable get _allWalkAnimations =>
       Listenable.merge(_walkControllers);
@@ -103,10 +111,52 @@ class _ShopWorldPageState extends State<ShopWorldPage>
 
   @override
   void dispose() {
+    _stopJoyConMovement(resetKnob: false);
     for (final controller in _walkControllers) {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  void _onJoyConDirection(int deltaCol, int deltaRow) {
+    if (deltaCol == 0 && deltaRow == 0) {
+      _stopJoyConMovement();
+      return;
+    }
+
+    _joyConDeltaCol = deltaCol;
+    _joyConDeltaRow = deltaRow;
+
+    if (_joyConMoveTimer != null) {
+      return;
+    }
+
+    _move(deltaCol, deltaRow);
+    _joyConMoveTimer = Timer.periodic(_joyConMoveInterval, (_) {
+      if (!mounted) {
+        _stopJoyConMovement(resetKnob: false);
+        return;
+      }
+      if (_joyConDeltaCol == 0 && _joyConDeltaRow == 0) {
+        _stopJoyConMovement();
+        return;
+      }
+      _move(_joyConDeltaCol, _joyConDeltaRow);
+    });
+  }
+
+  void _stopJoyConMovement({bool resetKnob = true}) {
+    _joyConMoveTimer?.cancel();
+    _joyConMoveTimer = null;
+    _joyConDeltaCol = 0;
+    _joyConDeltaRow = 0;
+    if (resetKnob) {
+      _joyConKey.currentState?.resetKnob();
+    }
+  }
+
+  void _pauseJoyConForNavigation() {
+    _stopJoyConMovement();
   }
 
   void _scheduleVisitStart(int slotIndex) {
@@ -324,6 +374,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   }
 
   Future<void> _openStore() async {
+    _pauseJoyConForNavigation();
     _isNavigatingToStore = true;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -364,6 +415,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   }
 
   Future<void> _openBearistaShop(ActiveCustomerVisit visit) async {
+    _pauseJoyConForNavigation();
     final completedBefore = visit.orderCompleted;
 
     await Navigator.of(context).push<void>(
@@ -389,6 +441,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   }
 
   Future<void> _openMinigames() async {
+    _pauseJoyConForNavigation();
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (context) => MinigamesPage(
@@ -403,6 +456,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   }
 
   Future<void> _openShopUpgrades() async {
+    _pauseJoyConForNavigation();
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (context) => ShopUpgradesPage(gameState: widget.gameState),
@@ -412,6 +466,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   }
 
   Future<void> _openCharacterEditor() async {
+    _pauseJoyConForNavigation();
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (context) => CharacterCreatorPage(
@@ -508,6 +563,8 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                     MovementControls(
                                       style: widget.controlStyle,
                                       onMove: _move,
+                                      onJoyConDirection: _onJoyConDirection,
+                                      joyConKey: _joyConKey,
                                     ),
                                     const SizedBox(height: 12),
                                     if (_canPlayMinigames) ...[
