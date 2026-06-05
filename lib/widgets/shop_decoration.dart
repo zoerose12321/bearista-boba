@@ -347,11 +347,13 @@ class ShopWorldHeader extends StatelessWidget implements PreferredSizeWidget {
     required this.title,
     required this.coins,
     this.onMultiplayerPressed,
+    this.multiplayerActive = false,
   });
 
   final String title;
   final int coins;
   final VoidCallback? onMultiplayerPressed;
+  final bool multiplayerActive;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -400,6 +402,7 @@ class ShopWorldHeader extends StatelessWidget implements PreferredSizeWidget {
                       _MultiplayerHeaderButton(
                         onPressed: onMultiplayerPressed!,
                         compact: compactMultiplayer,
+                        isActive: multiplayerActive,
                       ),
                     const MusicToggleButton(),
                     Padding(
@@ -437,20 +440,27 @@ class _MultiplayerHeaderButton extends StatelessWidget {
   const _MultiplayerHeaderButton({
     required this.onPressed,
     required this.compact,
+    this.isActive = false,
   });
 
   final VoidCallback onPressed;
   final bool compact;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final activeColor = theme.colorScheme.primary.withValues(alpha: 0.28);
+    final idleColor = theme.colorScheme.secondaryContainer.withValues(alpha: 0.7);
 
     if (compact) {
       return IconButton(
         key: const Key('multiplayer_button'),
         onPressed: onPressed,
         tooltip: 'Multiplayer',
+        style: IconButton.styleFrom(
+          backgroundColor: isActive ? activeColor : null,
+        ),
         icon: const Text('👥', style: TextStyle(fontSize: 18)),
       );
     }
@@ -458,7 +468,7 @@ class _MultiplayerHeaderButton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(right: 2),
       child: Material(
-        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.7),
+        color: isActive ? activeColor : idleColor,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           key: const Key('multiplayer_button'),
