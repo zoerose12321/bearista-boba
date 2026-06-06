@@ -13,10 +13,12 @@ class MultiplayerPanel extends StatelessWidget {
     required this.gameState,
     required this.multiplayerState,
     required this.onClose,
+    required this.onPurchaseHelper,
     required this.onActivateHelper,
     required this.onSendHelperHome,
     this.onStartLocalCafe,
     this.onEndLocalCafe,
+    this.panelMessage,
     this.compact = false,
   });
 
@@ -24,10 +26,12 @@ class MultiplayerPanel extends StatelessWidget {
   final ShopGameState gameState;
   final LocalMultiplayerState multiplayerState;
   final VoidCallback onClose;
+  final VoidCallback onPurchaseHelper;
   final VoidCallback onActivateHelper;
   final VoidCallback onSendHelperHome;
   final VoidCallback? onStartLocalCafe;
   final VoidCallback? onEndLocalCafe;
+  final String? panelMessage;
   final bool compact;
 
   @override
@@ -109,13 +113,26 @@ class MultiplayerPanel extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     mp.isHelperActive
-                        ? 'Your helper is taking café orders automatically.'
-                        : 'Call a helper bear to take orders and serve drinks '
-                            'while you run the floor.',
+                        ? 'Helper Bear is working.'
+                        : mp.isHelperBearUnlocked
+                            ? 'Activate Helper Bear to serve customers '
+                                'automatically.'
+                            : 'Buy Helper Bear to help serve customers '
+                                'automatically.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
                     ),
                   ),
+                  if (panelMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      panelMessage!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                   if (!compact) ...[
                     const SizedBox(height: 12),
                     Row(
@@ -146,28 +163,14 @@ class MultiplayerPanel extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  MultiplayerOptionTile(
-                    title: 'Helper Bear',
-                    emoji: '🐻',
-                    description: mp.isHelperActive
-                        ? '${LocalMultiplayerState.helperName} is serving customers for you.'
-                        : 'Call a helper bear to take orders and serve drinks.',
+                  _HelperBearOptionTile(
+                    multiplayerState: mp,
+                    coins: gameState.coins,
                     compact: compact,
-                    actionLabel: mp.isHelperActive
-                        ? 'Helper Active'
-                        : 'Activate Helper Bear',
-                    onAction: mp.isHelperActive ? null : onActivateHelper,
-                    actionKey: const Key('add_friend_helper'),
-                    actionFilled: true,
+                    onPurchaseHelper: onPurchaseHelper,
+                    onActivateHelper: onActivateHelper,
+                    onSendHelperHome: onSendHelperHome,
                   ),
-                  if (mp.isHelperActive) ...[
-                    const SizedBox(height: 8),
-                    OutlinedButton(
-                      key: const Key('send_helper_home'),
-                      onPressed: onSendHelperHome,
-                      child: const Text('Send Helper Home'),
-                    ),
-                  ],
                   const SizedBox(height: 8),
                   MultiplayerOptionTile(
                     title: 'Host a Café',
@@ -206,6 +209,86 @@ class MultiplayerPanel extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HelperBearOptionTile extends StatelessWidget {
+  const _HelperBearOptionTile({
+    required this.multiplayerState,
+    required this.coins,
+    required this.compact,
+    required this.onPurchaseHelper,
+    required this.onActivateHelper,
+    required this.onSendHelperHome,
+  });
+
+  final LocalMultiplayerState multiplayerState;
+  final int coins;
+  final bool compact;
+  final VoidCallback onPurchaseHelper;
+  final VoidCallback onActivateHelper;
+  final VoidCallback onSendHelperHome;
+
+  @override
+  Widget build(BuildContext context) {
+    final mp = multiplayerState;
+    final cost = LocalMultiplayerState.helperBearUnlockCost;
+
+    if (!mp.isHelperBearUnlocked) {
+      final canBuy = mp.canPurchaseHelperBear(coins);
+      final needed = mp.coinsNeededToUnlock(coins);
+      return MultiplayerOptionTile(
+        title: 'Helper Bear',
+        emoji: '🐻',
+        description:
+            'Buy Helper Bear to help serve customers automatically.\n'
+            'Cost: $cost coins',
+        compact: compact,
+        actionLabel: canBuy
+            ? 'Buy Helper Bear — $cost coins'
+            : 'Need $needed more coins',
+        onAction: canBuy ? onPurchaseHelper : null,
+        actionKey: const Key('buy_helper_bear'),
+        actionFilled: true,
+      );
+    }
+
+    if (mp.isHelperActive) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          MultiplayerOptionTile(
+            title: 'Helper Bear',
+            emoji: '🐻',
+            description:
+                '${LocalMultiplayerState.helperName} is serving customers for you.',
+            compact: compact,
+            actionLabel: 'Helper Active',
+            onAction: null,
+            actionKey: const Key('add_friend_helper'),
+            actionFilled: true,
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            key: const Key('send_helper_home'),
+            onPressed: onSendHelperHome,
+            child: const Text('Send Helper Home'),
+          ),
+        ],
+      );
+    }
+
+    return MultiplayerOptionTile(
+      title: 'Helper Bear',
+      emoji: '🐻',
+      description:
+          'Call a helper bear to take orders and serve drinks.',
+      compact: compact,
+      actionLabel: 'Activate Helper Bear',
+      onAction: onActivateHelper,
+      actionKey: const Key('add_friend_helper'),
+      actionFilled: true,
     );
   }
 }

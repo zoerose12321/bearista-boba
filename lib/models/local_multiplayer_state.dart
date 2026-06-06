@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 /// Local multiplayer and helper state for ShopWorldPage (v0.1.52+).
 class LocalMultiplayerState {
+  static const helperBearUnlockCost = 200;
+
   bool isLocalCafeActive = false;
   bool isHelperActive = false;
+  bool isHelperBearUnlocked = false;
   double friendNormX = 0.44;
   double friendNormY = 0.64;
 
@@ -39,6 +42,9 @@ class LocalMultiplayerState {
     required double minY,
     required double maxY,
   }) {
+    if (!isHelperBearUnlocked) {
+      return;
+    }
     isHelperActive = true;
     friendNormX = (playerNormX + 0.08).clamp(minX, maxX);
     friendNormY = (playerNormY + 0.05).clamp(minY, maxY);
@@ -46,5 +52,13 @@ class LocalMultiplayerState {
 
   void sendHelperHome() {
     isHelperActive = false;
+  }
+
+  bool canPurchaseHelperBear(int coins) {
+    return !isHelperBearUnlocked && coins >= helperBearUnlockCost;
+  }
+
+  int coinsNeededToUnlock(int coins) {
+    return (helperBearUnlockCost - coins).clamp(0, helperBearUnlockCost);
   }
 }

@@ -48,7 +48,19 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
               gameState: widget.gameState,
               multiplayerState: _multiplayerState,
               onClose: () => Navigator.of(context).maybePop(),
+              onPurchaseHelper: () => setState(() {
+                if (_multiplayerState.canPurchaseHelperBear(
+                  widget.gameState.coins,
+                )) {
+                  widget.gameState.coins -=
+                      LocalMultiplayerState.helperBearUnlockCost;
+                  _multiplayerState.isHelperBearUnlocked = true;
+                }
+              }),
               onActivateHelper: () => setState(() {
+                if (!_multiplayerState.isHelperBearUnlocked) {
+                  return;
+                }
                 _multiplayerState.activateHelper(
                   playerNormX: 0.36,
                   playerNormY: 0.68,

@@ -77,6 +77,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   bool _wasOnEntry = false;
   bool _isNavigatingToStore = false;
   bool _multiplayerPanelOpen = false;
+  String? _helperPanelMessage;
   final LocalMultiplayerState _localMultiplayer = LocalMultiplayerState();
   final HelperNpcState _helperNpc = HelperNpcState();
   Timer? _helperNpcTimer;
@@ -286,8 +287,28 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     });
   }
 
-  void _activateHelperBear() {
+  void _purchaseHelperBear() {
+    if (_localMultiplayer.isHelperBearUnlocked) {
+      return;
+    }
+    if (!_localMultiplayer.canPurchaseHelperBear(widget.gameState.coins)) {
+      return;
+    }
+
     setState(() {
+      widget.gameState.coins -= LocalMultiplayerState.helperBearUnlockCost;
+      _localMultiplayer.isHelperBearUnlocked = true;
+      _helperPanelMessage = 'Helper Bear unlocked!';
+    });
+  }
+
+  void _activateHelperBear() {
+    if (!_localMultiplayer.isHelperBearUnlocked) {
+      return;
+    }
+
+    setState(() {
+      _helperPanelMessage = null;
       _localMultiplayer.activateHelper(
         playerNormX: _playerNormX,
         playerNormY: _playerNormY,
@@ -985,10 +1006,12 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                 gameState: widget.gameState,
                                 multiplayerState: _localMultiplayer,
                                 onClose: _closeMultiplayerPanel,
+                                onPurchaseHelper: _purchaseHelperBear,
                                 onActivateHelper: _activateHelperBear,
                                 onSendHelperHome: _sendHelperHome,
                                 onStartLocalCafe: _startLocalCafe,
                                 onEndLocalCafe: _endLocalCafe,
+                                panelMessage: _helperPanelMessage,
                                 compact: true,
                               ),
                             ),
@@ -1011,10 +1034,12 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                                 gameState: widget.gameState,
                                 multiplayerState: _localMultiplayer,
                                 onClose: _closeMultiplayerPanel,
+                                onPurchaseHelper: _purchaseHelperBear,
                                 onActivateHelper: _activateHelperBear,
                                 onSendHelperHome: _sendHelperHome,
                                 onStartLocalCafe: _startLocalCafe,
                                 onEndLocalCafe: _endLocalCafe,
+                                panelMessage: _helperPanelMessage,
                                 compact: true,
                               ),
                             ),
