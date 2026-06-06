@@ -13,7 +13,9 @@ import '../models/customer_visit_state.dart';
 import '../models/helper_npc_state.dart';
 import '../models/local_multiplayer_state.dart';
 import '../models/player_character.dart';
+import '../models/player_profile.dart';
 import '../models/shop_game_state.dart';
+import '../services/profile_storage_service.dart';
 import '../services/coin_reward_service.dart';
 import '../services/helper_npc_service.dart';
 import '../services/sound_effects_service.dart';
@@ -32,11 +34,15 @@ import 'store_page.dart';
 class ShopWorldPage extends StatefulWidget {
   const ShopWorldPage({
     super.key,
+    required this.profile,
+    required this.profileStorage,
     required this.player,
     required this.gameState,
     this.controlStyle = ControlStyle.arrows,
   });
 
+  final PlayerProfile profile;
+  final ProfileStorageService profileStorage;
   final PlayerCharacter player;
   final ShopGameState gameState;
   final ControlStyle controlStyle;
@@ -98,6 +104,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   @override
   void initState() {
     super.initState();
+    _localMultiplayer.isHelperBearUnlocked = widget.profile.helperBearUnlocked;
     _walkControllers = List.generate(
       _slotCount,
       (_) => AnimationController(vsync: this, duration: _walkDuration),
@@ -123,12 +130,23 @@ class _ShopWorldPageState extends State<ShopWorldPage>
 
   @override
   void dispose() {
+    _saveCurrentProfileProgress();
     _stopJoyConMovement(resetKnob: false);
     _stopHelperNpc();
     for (final controller in _walkControllers) {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  void _saveCurrentProfileProgress() {
+    widget.profile.updateFrom(
+      player: widget.player,
+      gameState: widget.gameState,
+      controlStyle: widget.controlStyle,
+      helperBearUnlocked: _localMultiplayer.isHelperBearUnlocked,
+    );
+    unawaited(widget.profileStorage.saveProfile(widget.profile));
   }
 
   void _onJoyConDirection(int deltaCol, int deltaRow) {
@@ -300,6 +318,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       _localMultiplayer.isHelperBearUnlocked = true;
       _helperPanelMessage = 'Helper Bear unlocked!';
     });
+    _saveCurrentProfileProgress();
   }
 
   void _activateHelperBear() {
@@ -510,6 +529,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     visit.coinReward = reward;
     widget.gameState.coins += reward;
     SoundEffectsService.instance.playCoinDing();
+    _saveCurrentProfileProgress();
 
     setState(() {
       _helperNpc.statusMessage = 'Served! +$reward';
@@ -690,6 +710,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       _isNavigatingToStore = false;
       _wasOnEntry = _isOnEntry;
       _resumeHelperNpc();
+      _saveCurrentProfileProgress();
       setState(() {});
     }
   }
@@ -744,6 +765,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       _replaceVisit(visit.slotIndex);
     }
     _resumeHelperNpc();
+    _saveCurrentProfileProgress();
     setState(() {});
   }
 
@@ -760,6 +782,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     );
     if (mounted) {
       _resumeHelperNpc();
+      _saveCurrentProfileProgress();
       setState(() {});
     }
   }
@@ -773,6 +796,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       ),
     );
     _resumeHelperNpc();
+    _saveCurrentProfileProgress();
     setState(() {});
   }
 
@@ -787,6 +811,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       ),
     );
     _resumeHelperNpc();
+    _saveCurrentProfileProgress();
     setState(() {});
   }
 

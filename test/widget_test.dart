@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:bearista_boba/main.dart';
 import 'package:bearista_boba/models/seating_assignment.dart';
@@ -11,6 +12,7 @@ Future<void> _enterShop(
   WidgetTester tester, {
   String? customName,
 }) async {
+  await tester.pumpAndSettle();
   await tester.tap(find.text('Start'));
   await tester.pumpAndSettle();
 
@@ -225,6 +227,7 @@ Future<void> _openMinigamesHub(WidgetTester tester) async {
 
 void main() {
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     SeatingAssignment.testRandom = Random(42);
   });
 
@@ -235,6 +238,7 @@ void main() {
 
   testWidgets('Home page shows title and start button', (WidgetTester tester) async {
     await tester.pumpWidget(const BearistaBobaApp());
+    await tester.pumpAndSettle();
 
     expect(find.text('Bearista Boba'), findsOneWidget);
     expect(find.text('Run your cozy boba café'), findsOneWidget);
