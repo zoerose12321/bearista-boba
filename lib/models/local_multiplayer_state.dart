@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Local multiplayer and helper state for ShopWorldPage (v0.1.52+).
 class LocalMultiplayerState {
-  static const helperBearUnlockCost = 200;
+  static const helperBearUnlockCost = 100;
 
   bool isLocalCafeActive = false;
   bool isHelperActive = false;
