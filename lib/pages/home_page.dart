@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/control_style.dart';
 import '../models/player_profile.dart';
@@ -95,7 +96,7 @@ class _HomePageState extends State<HomePage> {
       confirmLabel: 'Create',
       initialName: 'Bearista',
     );
-    if (name == null || !mounted) {
+    if (name == null || !mounted || !PlayerProfile.isValidProfileName(name)) {
       return;
     }
 
@@ -171,42 +172,73 @@ class _HomePageState extends State<HomePage> {
     required String confirmLabel,
     required String initialName,
   }) async {
-    final controller = TextEditingController(text: initialName);
+    final controller = TextEditingController(
+      text: PlayerProfile.normalizeProfileName(initialName),
+    );
+
+    String? validationMessage(String value) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) {
+        return 'Enter a profile name to continue.';
+      }
+      if (trimmed.length > PlayerProfile.maxProfileNameLength) {
+        return 'Profile names can be up to '
+            '${PlayerProfile.maxProfileNameLength} characters.';
+      }
+      return null;
+    }
 
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: TextField(
-            key: const Key('profile_name_field'),
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: hint,
-              border: const OutlineInputBorder(),
-            ),
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) =>
-                Navigator.of(context).pop(controller.text.trim()),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(controller.text.trim()),
-              child: Text(confirmLabel),
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final validationError = validationMessage(controller.text);
+            final canSubmit = validationError == null;
+
+            return AlertDialog(
+              title: Text(title),
+              content: TextField(
+                key: const Key('profile_name_field'),
+                controller: controller,
+                autofocus: true,
+                maxLength: PlayerProfile.maxProfileNameLength,
+                maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                decoration: InputDecoration(
+                  labelText: hint,
+                  border: const OutlineInputBorder(),
+                  helperText: validationError ??
+                      'Up to ${PlayerProfile.maxProfileNameLength} characters',
+                  helperMaxLines: 2,
+                ),
+                onChanged: (_) => setDialogState(() {}),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) {
+                  if (canSubmit) {
+                    Navigator.of(context).pop(controller.text.trim());
+                  }
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: canSubmit
+                      ? () => Navigator.of(context).pop(controller.text.trim())
+                      : null,
+                  child: Text(confirmLabel),
+                ),
+              ],
+            );
+          },
         );
       },
     );
 
     controller.dispose();
-    if (result == null || result.isEmpty) {
+    if (result == null || !PlayerProfile.isValidProfileName(result)) {
       return null;
     }
     return result;

@@ -49,12 +49,33 @@ class PlayerProfile {
   final List<CustomRecipe> customRecipes;
   bool helperBearUnlocked;
 
+  static const maxProfileNameLength = 15;
+
+  /// Trims whitespace and caps length for safe display/storage.
+  static String normalizeProfileName(
+    String raw, {
+    String fallback = 'Bearista',
+  }) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return fallback;
+    }
+    if (trimmed.length <= maxProfileNameLength) {
+      return trimmed;
+    }
+    return trimmed.substring(0, maxProfileNameLength);
+  }
+
+  static bool isValidProfileName(String raw) {
+    final trimmed = raw.trim();
+    return trimmed.isNotEmpty && trimmed.length <= maxProfileNameLength;
+  }
+
   static PlayerProfile createNew(String name) {
     final now = DateTime.now();
-    final trimmed = name.trim();
     return PlayerProfile(
       profileId: now.millisecondsSinceEpoch.toString(),
-      profileName: trimmed.isEmpty ? 'Bearista' : trimmed,
+      profileName: normalizeProfileName(name),
       createdAt: now,
       updatedAt: now,
     );
@@ -154,7 +175,9 @@ class PlayerProfile {
     return PlayerProfile(
       profileId: _readString(json, 'profileId') ??
           DateTime.now().millisecondsSinceEpoch.toString(),
-      profileName: _readString(json, 'profileName') ?? 'Bearista',
+      profileName: normalizeProfileName(
+        _readString(json, 'profileName') ?? 'Bearista',
+      ),
       createdAt: _readDateTime(json, 'createdAt') ?? DateTime.now(),
       updatedAt: _readDateTime(json, 'updatedAt') ?? DateTime.now(),
       coins: _readInt(json, 'coins'),
