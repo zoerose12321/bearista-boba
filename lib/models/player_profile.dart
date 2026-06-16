@@ -71,6 +71,15 @@ class PlayerProfile {
     return trimmed.isNotEmpty && trimmed.length <= maxProfileNameLength;
   }
 
+  /// Header title for [ShopWorldPage], e.g. "Zoe's Shop".
+  String get shopTitle {
+    final name = profileName.trim();
+    if (name.isEmpty) {
+      return 'Bearista\'s Shop';
+    }
+    return '$name\'s Shop';
+  }
+
   static PlayerProfile createNew(String name) {
     final now = DateTime.now();
     return PlayerProfile(

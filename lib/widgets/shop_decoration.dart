@@ -390,6 +390,7 @@ class ShopWorldHeader extends StatelessWidget implements PreferredSizeWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w600,
+                    fontSize: title.length > 18 ? 18 : null,
                   ),
                 ),
               ),
