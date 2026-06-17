@@ -250,7 +250,7 @@ void main() {
 
     await _enterShop(tester, customName: 'Sunny');
 
-    expect(find.text('Sunny\'s Shop'), findsOneWidget);
+    expect(find.text('Bearista\'s Shop'), findsOneWidget);
     expect(find.text('Talk'), findsOneWidget);
     expect(find.text('Shop Upgrades'), findsOneWidget);
     expect(find.text('Honey Bear'), findsOneWidget);

@@ -989,7 +989,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                             child: SizedBox(
                               width: contentWidth,
                               child: ShopWorldHeader(
-                                title: '${widget.player.displayName}\'s Shop',
+                                title: widget.profile.shopTitle,
                                 coins: widget.gameState.coins,
                                 onMultiplayerPressed: _toggleMultiplayerPanel,
                                 multiplayerActive: _multiplayerPanelOpen,
