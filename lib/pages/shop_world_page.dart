@@ -92,7 +92,6 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   final HelperNpcState _helperNpc = HelperNpcState();
   bool _isOnlineHost = false;
   bool _isOnlineVisitor = false;
-  bool _isOnlineFallbackHost = false;
   bool _isOpeningOnlineCafe = false;
   String? _onlineSessionId;
   String? _onlineJoinCode;
@@ -112,8 +111,6 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   int _joyConDeltaRow = 0;
   static const _joyConMoveInterval = Duration(milliseconds: 150);
   static const _joyConStepScale = 0.75;
-  static const _fallbackHostMessage =
-      'Could not connect online yet, so we made a temporary café code.';
 
   /// Walk-path start — clear of entry door, open floor toward counter.
   Listenable get _allWalkAnimations =>
@@ -150,9 +147,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   void dispose() {
     _onlineSessionSub?.cancel();
     _isOpeningOnlineCafe = false;
-    if (_isOnlineHost &&
-        !_isOnlineFallbackHost &&
-        _onlineSessionId != null) {
+    if (_isOnlineHost && _onlineSessionId != null) {
       unawaited(_onlineCafeService.closeCafeSession(_onlineSessionId!));
     } else if (_isOnlineVisitor && _onlineSessionId != null) {
       unawaited(
@@ -207,7 +202,6 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       isOnlineHost: _isOnlineHost,
       isOnlineVisitor: _isOnlineVisitor,
       isOpeningOnlineCafe: _isOpeningOnlineCafe,
-      isOnlineFallbackHost: _isOnlineFallbackHost,
       hostedSession: _hostedSession,
       onlineJoinCode: _onlineJoinCode,
       onlineHostProfileName: _onlineHostProfileName,
@@ -226,7 +220,6 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     _onlineSessionSub?.cancel();
     _onlineSessionSub = null;
     _isOnlineHost = false;
-    _isOnlineFallbackHost = false;
     _hostedSession = null;
     _onlineSessionId = null;
     _onlineJoinCode = null;
@@ -234,27 +227,33 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     _onlineCafeErrorMessage = errorMessage;
   }
 
-  void _applyOnlineHostSession(
-    OnlineCafeSession session, {
-    required bool isFallback,
-    String? warningMessage,
-  }) {
+  void _applyOnlineHostSession(OnlineCafeSession session) {
     setState(() {
       _isOnlineHost = true;
       _isOnlineVisitor = false;
-      _isOnlineFallbackHost = isFallback;
       _hostedSession = session;
-      _onlineSessionId = isFallback ? null : session.sessionId;
+      _onlineSessionId = session.sessionId;
       _onlineJoinCode = session.joinCode;
-      _onlinePanelMessage = isFallback
-          ? 'Temporary code created. Online sharing may need Firebase setup.'
-          : 'Share this code with a friend.';
-      _onlineCafeErrorMessage =
-          isFallback ? (warningMessage ?? _fallbackHostMessage) : null;
+      _onlinePanelMessage = 'Share this code with a friend.';
+      _onlineCafeErrorMessage = null;
     });
-    if (!isFallback) {
-      _listenToHostedSession(session);
-    }
+    _listenToHostedSession(session);
+  }
+
+  void _showOnlineHostFailure({
+    OnlineCafeResult<OnlineCafeSession>? result,
+    Object? failure,
+  }) {
+    final diagnostic = result?.diagnosticDetail ??
+        (failure != null ? OnlineCafeService.diagnosticFrom(failure) : null);
+    final message = OnlineCafeService.hostFailureMessage;
+    setState(() {
+      _onlineCafeErrorMessage =
+          diagnostic != null ? '$message ($diagnostic)' : message;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _openOnlineCafe() async {
@@ -299,22 +298,18 @@ class _ShopWorldPageState extends State<ShopWorldPage>
         result.isSuccess &&
         result.data != null &&
         result.data!.joinCode.isNotEmpty) {
-      _applyOnlineHostSession(result.data!, isFallback: false);
+      _applyOnlineHostSession(result.data!);
       return;
     }
 
     if (failure != null) {
-      debugPrint('Open online café using local fallback after: $failure');
+      debugPrint('Open online café failed with exception: $failure');
     } else if (result?.errorMessage != null) {
-      debugPrint('Open online café using local fallback after: '
-          '${result!.errorMessage}');
+      debugPrint('Open online café failed: ${result!.errorMessage} '
+          '(${result.diagnosticDetail})');
     }
 
-    _applyOnlineHostSession(
-      _onlineCafeService.createLocalFallbackSession(widget.profile),
-      isFallback: true,
-      warningMessage: _fallbackHostMessage,
-    );
+    _showOnlineHostFailure(result: result, failure: failure);
   }
 
   void _listenToHostedSession(OnlineCafeSession session) {
@@ -348,18 +343,18 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   }
 
   Future<void> _closeOnlineCafe() async {
-    if (_isOnlineFallbackHost || _onlineSessionId == null) {
+    final sessionId = _onlineSessionId;
+    if (sessionId == null) {
       if (!mounted) {
         return;
       }
       setState(() {
         _isOpeningOnlineCafe = false;
-        _clearOnlineHostState(message: 'Online café closed.');
+        _clearOnlineHostState();
       });
       return;
     }
 
-    final sessionId = _onlineSessionId!;
     setState(() {
       _isOpeningOnlineCafe = true;
       _onlineCafeErrorMessage = null;
@@ -373,13 +368,15 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     } on TimeoutException catch (error) {
       debugPrint('Close online café timed out: $error');
       result = OnlineCafeResult.failure(
-        'Could not close online café. Local code cleared.',
+        'Could not close online café. Check Firebase setup and try again.',
+        diagnosticDetail: OnlineCafeService.diagnosticFrom(error),
       );
     } catch (error, stackTrace) {
       debugPrint('Close online café failed: $error');
       debugPrint('$stackTrace');
       result = OnlineCafeResult.failure(
-        'Could not close online café. Local code cleared.',
+        'Could not close online café. Check Firebase setup and try again.',
+        diagnosticDetail: OnlineCafeService.diagnosticFrom(error),
       );
     } finally {
       _onlineSessionSub?.cancel();
@@ -388,7 +385,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
         setState(() {
           _isOpeningOnlineCafe = false;
           _clearOnlineHostState(
-            message: 'Online café closed.',
+            message: result?.isSuccess == true ? 'Online café closed.' : null,
             errorMessage: result != null && !result.isSuccess
                 ? result.errorMessage
                 : null,
@@ -429,9 +426,11 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     }
 
     if (!result.isSuccess || result.data == null) {
+      final diagnostic = result.diagnosticDetail;
       setState(() {
-        _onlinePanelMessage =
-            result.errorMessage ?? 'Could not find that café code.';
+        _onlineCafeErrorMessage = diagnostic != null
+            ? '${result.errorMessage ?? 'Could not find that café code.'} ($diagnostic)'
+            : result.errorMessage ?? 'Could not find that café code.';
       });
       return;
     }

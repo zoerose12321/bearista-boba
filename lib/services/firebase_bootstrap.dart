@@ -8,6 +8,12 @@ class FirebaseBootstrap {
   static bool isReady = false;
   static String? initError;
 
+  static bool get isConfigured {
+    final options = DefaultFirebaseOptions.currentPlatform;
+    return !options.apiKey.contains('TODO_REPLACE') &&
+        !options.appId.contains('placeholder');
+  }
+
   static Future<void> initialize() async {
     if (Firebase.apps.isNotEmpty) {
       isReady = true;
@@ -20,6 +26,12 @@ class FirebaseBootstrap {
       );
       isReady = true;
       initError = null;
+      if (!isConfigured) {
+        debugPrint(
+          'Firebase initialized with placeholder options. '
+          'Run flutterfire configure for real online cafés.',
+        );
+      }
     } catch (error, stackTrace) {
       isReady = false;
       initError = error.toString();

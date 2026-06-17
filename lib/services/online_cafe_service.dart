@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -17,12 +18,14 @@ class OnlineCafeService {
   static const collectionName = 'onlineCafeSessions';
   static const joinCodeLength = 6;
   static const createSessionTimeout = Duration(seconds: 5);
+  static const hostFailureMessage =
+      'Online café could not connect yet. Check Firebase setup and try again.';
   static const _codeChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
   final FirebaseFirestore? _firestore;
   final Random _random;
 
-  bool get isAvailable => FirebaseBootstrap.isReady;
+  bool get isAvailable => FirebaseBootstrap.isReady && FirebaseBootstrap.isConfigured;
 
   FirebaseFirestore get _db {
     final firestore = _firestore;
@@ -42,41 +45,44 @@ class OnlineCafeService {
     return raw.trim().replaceAll(RegExp(r'\s+'), '').toUpperCase();
   }
 
-  static String generateLocalFallbackCode([Random? random]) {
-    final source = random ?? Random();
-    final buffer = StringBuffer();
-    for (var i = 0; i < joinCodeLength; i++) {
-      buffer.write(_codeChars[source.nextInt(_codeChars.length)]);
+  static String diagnosticFrom(Object error) {
+    if (error is FirebaseException) {
+      switch (error.code) {
+        case 'permission-denied':
+          return 'Firebase permission denied';
+        case 'unavailable':
+          return 'Network unavailable';
+        case 'not-found':
+          return 'Firebase project not found';
+        default:
+          return error.code;
+      }
     }
-    return buffer.toString();
-  }
-
-  /// Local-only café session when Firestore is unavailable (v0.1.63+).
-  OnlineCafeSession createLocalFallbackSession(PlayerProfile hostProfile) {
-    final now = DateTime.now();
-    return OnlineCafeSession(
-      sessionId: 'local_${now.millisecondsSinceEpoch}',
-      joinCode: generateLocalFallbackCode(_random),
-      hostProfileId: hostProfile.profileId,
-      hostProfileName: hostProfile.profileName,
-      hostShopName: hostProfile.shopTitle,
-      hostCharacter: hostProfile.toOnlineCharacterSummary(),
-      createdAt: now,
-      updatedAt: now,
-      isOpen: true,
-      visitorCount: 0,
-      visitorSummaries: const [],
-      isLocalFallback: true,
-    );
+    if (error is StateError &&
+        error.message.toLowerCase().contains('firebase')) {
+      return 'Firebase not initialized';
+    }
+    if (error is TimeoutException) {
+      return 'Connection timed out';
+    }
+    return error.toString();
   }
 
   Future<OnlineCafeResult<OnlineCafeSession>> createCafeSession(
     PlayerProfile hostProfile,
   ) async {
-    if (!isAvailable) {
-      debugPrint('createCafeSession skipped: Firebase is not ready.');
+    if (!FirebaseBootstrap.isReady) {
+      debugPrint('createCafeSession skipped: Firebase is not initialized.');
       return OnlineCafeResult.failure(
-        'Could not open café online yet. Check Firebase setup and try again.',
+        hostFailureMessage,
+        diagnosticDetail: FirebaseBootstrap.initError ?? 'Firebase not initialized',
+      );
+    }
+    if (!FirebaseBootstrap.isConfigured) {
+      debugPrint('createCafeSession skipped: Firebase options are placeholders.');
+      return OnlineCafeResult.failure(
+        hostFailureMessage,
+        diagnosticDetail: 'Run flutterfire configure',
       );
     }
 
@@ -89,7 +95,8 @@ class OnlineCafeService {
       if (joinCode.isEmpty || joinCode.length != joinCodeLength) {
         debugPrint('createCafeSession failed: invalid join code "$joinCode".');
         return OnlineCafeResult.failure(
-          'Could not open café online yet. Check Firebase setup and try again.',
+          hostFailureMessage,
+          diagnosticDetail: 'Invalid join code generated',
         );
       }
 
@@ -108,13 +115,15 @@ class OnlineCafeService {
       );
 
       await _collection.doc(sessionId).set(session.toMap());
+      debugPrint('createCafeSession wrote session $sessionId code $joinCode');
 
       return OnlineCafeResult.success(session);
     } catch (error, stackTrace) {
       debugPrint('createCafeSession failed: $error');
       debugPrint('$stackTrace');
       return OnlineCafeResult.failure(
-        'Could not open café online yet. Check Firebase setup and try again.',
+        hostFailureMessage,
+        diagnosticDetail: diagnosticFrom(error),
       );
     }
   }
@@ -122,7 +131,8 @@ class OnlineCafeService {
   Future<OnlineCafeResult<void>> closeCafeSession(String sessionId) async {
     if (!isAvailable) {
       return OnlineCafeResult.failure(
-        'Could not close online café. Check internet and Firebase setup.',
+        'Could not close online café. Check Firebase setup and try again.',
+        diagnosticDetail: FirebaseBootstrap.initError ?? 'Firebase not ready',
       );
     }
 
@@ -132,9 +142,12 @@ class OnlineCafeService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return OnlineCafeResult.success(null);
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('closeCafeSession failed: $error');
+      debugPrint('$stackTrace');
       return OnlineCafeResult.failure(
-        'Could not close online café. Check internet and Firebase setup.',
+        'Could not close online café. Check Firebase setup and try again.',
+        diagnosticDetail: diagnosticFrom(error),
       );
     }
   }
@@ -144,7 +157,8 @@ class OnlineCafeService {
   ) async {
     if (!isAvailable) {
       return OnlineCafeResult.failure(
-        'Could not find that café code. Check internet and Firebase setup.',
+        'Could not find that café code.',
+        diagnosticDetail: FirebaseBootstrap.initError ?? 'Firebase not ready',
       );
     }
 
@@ -156,6 +170,7 @@ class OnlineCafeService {
     try {
       final snapshot = await _collection
           .where('joinCode', isEqualTo: normalized)
+          .where('isOpen', isEqualTo: true)
           .limit(1)
           .get();
 
@@ -164,14 +179,37 @@ class OnlineCafeService {
       }
 
       final doc = snapshot.docs.first;
-      final session = OnlineCafeSession.fromMap(doc.id, doc.data());
-      if (!session.isOpen) {
-        return OnlineCafeResult.failure('Could not find that café code.');
-      }
+      return OnlineCafeResult.success(
+        OnlineCafeSession.fromMap(doc.id, doc.data()),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('findSessionByJoinCode failed: $error');
+      debugPrint('$stackTrace');
 
-      return OnlineCafeResult.success(session);
-    } catch (_) {
-      return OnlineCafeResult.failure('Could not find that café code.');
+      try {
+        final fallback = await _collection
+            .where('joinCode', isEqualTo: normalized)
+            .limit(1)
+            .get();
+        if (fallback.docs.isEmpty) {
+          return OnlineCafeResult.failure('Could not find that café code.');
+        }
+        final session = OnlineCafeSession.fromMap(
+          fallback.docs.first.id,
+          fallback.docs.first.data(),
+        );
+        if (!session.isOpen) {
+          return OnlineCafeResult.failure('Could not find that café code.');
+        }
+        return OnlineCafeResult.success(session);
+      } catch (fallbackError, fallbackStack) {
+        debugPrint('findSessionByJoinCode fallback failed: $fallbackError');
+        debugPrint('$fallbackStack');
+        return OnlineCafeResult.failure(
+          'Could not find that café code.',
+          diagnosticDetail: diagnosticFrom(error),
+        );
+      }
     }
   }
 
@@ -207,14 +245,22 @@ class OnlineCafeService {
 
       final refreshed = await _collection.doc(session.sessionId).get();
       if (!refreshed.exists) {
-        return OnlineCafeResult.failure('Could not join that café code.');
+        return OnlineCafeResult.failure(
+          'Could not join that café code.',
+          diagnosticDetail: 'Session missing after join',
+        );
       }
 
       return OnlineCafeResult.success(
         OnlineCafeSession.fromMap(session.sessionId, refreshed.data()!),
       );
-    } catch (_) {
-      return OnlineCafeResult.failure('Could not join that café code.');
+    } catch (error, stackTrace) {
+      debugPrint('joinCafeSession failed: $error');
+      debugPrint('$stackTrace');
+      return OnlineCafeResult.failure(
+        'Could not join that café code.',
+        diagnosticDetail: diagnosticFrom(error),
+      );
     }
   }
 
@@ -247,7 +293,9 @@ class OnlineCafeService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return OnlineCafeResult.success(null);
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('leaveCafeSession failed: $error');
+      debugPrint('$stackTrace');
       return OnlineCafeResult.success(null);
     }
   }
@@ -304,6 +352,10 @@ class OnlineCafeService {
   }
 
   String _randomJoinCode() {
-    return generateLocalFallbackCode(_random);
+    final buffer = StringBuffer();
+    for (var i = 0; i < joinCodeLength; i++) {
+      buffer.write(_codeChars[_random.nextInt(_codeChars.length)]);
+    }
+    return buffer.toString();
   }
 }

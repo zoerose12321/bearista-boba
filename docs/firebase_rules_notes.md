@@ -1,6 +1,13 @@
-# Firebase rules notes (v0.1.61)
+# Firebase rules notes (v0.1.64)
 
-Bearista Boba online café sessions are a **prototype** feature.
+Bearista Boba online café sessions are a **prototype** feature that requires **real Firestore** — temporary/local codes are no longer shown.
+
+## Setup checklist (Chrome QA)
+
+1. Run `flutterfire configure` and replace `lib/firebase_options.dart` placeholders.
+2. Enable Firestore in the Firebase console.
+3. Deploy development rules from `firestore.rules` (prototype open read/write).
+4. Host in one browser profile, join from another using the Firestore join code.
 
 ## Current state
 
@@ -16,10 +23,13 @@ The included `firestore.rules` file uses **open read/write** rules for local dev
 
 Before App Store release:
 
-1. Run `flutterfire configure` and replace placeholder values in `lib/firebase_options.dart`.
-2. Replace Firestore rules with authenticated or scoped writes (host-only updates, visitor join/leave only).
-3. Add rate limiting / abuse monitoring for join codes.
+1. Replace Firestore rules with authenticated or scoped writes (host-only updates, visitor join/leave only).
+2. Add rate limiting / abuse monitoring for join codes.
 
-## QA target
+## Failure behavior
 
-Chrome/web is the first supported target for hosting and joining online cafés.
+If Firebase is unavailable or permission is denied, **Open My Café Online** shows:
+
+> Online café could not connect yet. Check Firebase setup and try again.
+
+No fake join code is displayed.

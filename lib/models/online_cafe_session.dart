@@ -49,7 +49,6 @@ class OnlineCafeSession {
     required this.isOpen,
     required this.visitorCount,
     required this.visitorSummaries,
-    this.isLocalFallback = false,
   });
 
   final String sessionId;
@@ -63,9 +62,6 @@ class OnlineCafeSession {
   final bool isOpen;
   final int visitorCount;
   final List<OnlineCafeVisitorSummary> visitorSummaries;
-
-  /// True when the session exists only on-device (Firebase unavailable).
-  final bool isLocalFallback;
 
   Map<String, dynamic> toMap() {
     return {
@@ -128,7 +124,6 @@ class OnlineCafeSession {
     int? visitorCount,
     List<OnlineCafeVisitorSummary>? visitorSummaries,
     DateTime? updatedAt,
-    bool? isLocalFallback,
   }) {
     return OnlineCafeSession(
       sessionId: sessionId,
@@ -142,7 +137,6 @@ class OnlineCafeSession {
       isOpen: isOpen ?? this.isOpen,
       visitorCount: visitorCount ?? this.visitorCount,
       visitorSummaries: visitorSummaries ?? this.visitorSummaries,
-      isLocalFallback: isLocalFallback ?? this.isLocalFallback,
     );
   }
 
@@ -180,18 +174,29 @@ class OnlineCafeSession {
 }
 
 class OnlineCafeResult<T> {
-  const OnlineCafeResult._({this.data, this.errorMessage});
+  const OnlineCafeResult._({
+    this.data,
+    this.errorMessage,
+    this.diagnosticDetail,
+  });
 
   factory OnlineCafeResult.success(T data) {
     return OnlineCafeResult._(data: data);
   }
 
-  factory OnlineCafeResult.failure(String message) {
-    return OnlineCafeResult._(errorMessage: message);
+  factory OnlineCafeResult.failure(
+    String message, {
+    String? diagnosticDetail,
+  }) {
+    return OnlineCafeResult._(
+      errorMessage: message,
+      diagnosticDetail: diagnosticDetail,
+    );
   }
 
   final T? data;
   final String? errorMessage;
+  final String? diagnosticDetail;
 
   bool get isSuccess => errorMessage == null;
 }
