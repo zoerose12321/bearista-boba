@@ -25,10 +25,13 @@ class MultiplayerPanel extends StatelessWidget {
     this.onlineAvailable = false,
     this.isOnlineHost = false,
     this.isOnlineVisitor = false,
+    this.isOpeningOnlineCafe = false,
     this.hostedSession,
+    this.onlineJoinCode,
     this.onlineHostProfileName,
     this.onlineHostShopName,
     this.onlinePanelMessage,
+    this.onlineCafeErrorMessage,
     this.onOpenOnlineCafe,
     this.onCloseOnlineCafe,
     this.onEnterJoinCode,
@@ -50,10 +53,13 @@ class MultiplayerPanel extends StatelessWidget {
   final bool onlineAvailable;
   final bool isOnlineHost;
   final bool isOnlineVisitor;
+  final bool isOpeningOnlineCafe;
   final OnlineCafeSession? hostedSession;
+  final String? onlineJoinCode;
   final String? onlineHostProfileName;
   final String? onlineHostShopName;
   final String? onlinePanelMessage;
+  final String? onlineCafeErrorMessage;
   final VoidCallback? onOpenOnlineCafe;
   final VoidCallback? onCloseOnlineCafe;
   final VoidCallback? onEnterJoinCode;
@@ -68,10 +74,41 @@ class MultiplayerPanel extends StatelessWidget {
       }
       return 'Visiting Online Café';
     }
-    if (isOnlineHost && hostedSession != null) {
-      return 'Your café is open online!';
+    if (isOnlineHost && _visibleJoinCode.isNotEmpty) {
+      return 'Your café is online!';
     }
     return multiplayerState.statusLabel;
+  }
+
+  String get _visibleJoinCode {
+    final sessionCode = hostedSession?.joinCode.trim();
+    if (sessionCode != null && sessionCode.isNotEmpty) {
+      return sessionCode;
+    }
+    return onlineJoinCode?.trim() ?? '';
+  }
+
+  OnlineCafeSession? get _hostCardSession {
+    if (hostedSession != null) {
+      return hostedSession;
+    }
+    final code = _visibleJoinCode;
+    if (!isOnlineHost || code.isEmpty) {
+      return null;
+    }
+    return OnlineCafeSession(
+      sessionId: 'local-host',
+      joinCode: code,
+      hostProfileId: '',
+      hostProfileName: player.displayName,
+      hostShopName: 'Your Shop',
+      hostCharacter: const {},
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      isOpen: true,
+      visitorCount: 0,
+      visitorSummaries: const [],
+    );
   }
 
   @override
@@ -166,12 +203,38 @@ class MultiplayerPanel extends StatelessWidget {
                       child: const Text('Leave Online Café'),
                     ),
                     const SizedBox(height: 12),
-                  ] else if (isOnlineHost && hostedSession != null) ...[
+                  ] else if (isOnlineHost && _hostCardSession != null) ...[
                     HostCafeCard(
-                      session: hostedSession!,
+                      session: _hostCardSession!,
                       compact: compact,
                       onCopyCode: onCopyJoinCode ?? () {},
                       onCloseCafe: onCloseOnlineCafe ?? () {},
+                    ),
+                    const SizedBox(height: 12),
+                  ] else if (isOpeningOnlineCafe) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Opening café online…',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF5C4A42),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          const LinearProgressIndicator(),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
                   ] else ...[
@@ -181,10 +244,10 @@ class MultiplayerPanel extends StatelessWidget {
                       description:
                           'Open your restaurant online and share a short café code.',
                       compact: compact,
-                      actionLabel: onlineAvailable
-                          ? 'Open My Café Online'
-                          : 'Online unavailable',
-                      onAction: onlineAvailable ? onOpenOnlineCafe : null,
+                      actionLabel: isOpeningOnlineCafe
+                          ? 'Opening café online…'
+                          : 'Open My Café Online',
+                      onAction: isOpeningOnlineCafe ? null : onOpenOnlineCafe,
                       actionKey: const Key('open_online_cafe'),
                       actionFilled: true,
                     ),
@@ -195,12 +258,20 @@ class MultiplayerPanel extends StatelessWidget {
                       description:
                           'Enter a friend\'s café code to visit their restaurant online.',
                       compact: compact,
-                      actionLabel: onlineAvailable
-                          ? 'Enter Café Code'
-                          : 'Online unavailable',
-                      onAction: onlineAvailable ? onEnterJoinCode : null,
+                      actionLabel: 'Enter Café Code',
+                      onAction: isOpeningOnlineCafe ? null : onEnterJoinCode,
                       actionKey: const Key('enter_cafe_code'),
                       actionFilled: false,
+                    ),
+                  ],
+                  if (onlineCafeErrorMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      onlineCafeErrorMessage!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                   if (combinedMessage != null) ...[
@@ -213,7 +284,10 @@ class MultiplayerPanel extends StatelessWidget {
                       ),
                     ),
                   ],
-                  if (!onlineAvailable && !isOnlineHost && !isOnlineVisitor) ...[
+                  if (!onlineAvailable &&
+                      !isOnlineHost &&
+                      !isOnlineVisitor &&
+                      !isOpeningOnlineCafe) ...[
                     const SizedBox(height: 8),
                     Text(
                       'Online cafés need Firebase setup and internet. '

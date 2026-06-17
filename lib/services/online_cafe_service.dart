@@ -44,7 +44,7 @@ class OnlineCafeService {
   ) async {
     if (!isAvailable) {
       return OnlineCafeResult.failure(
-        'Could not open café online. Check internet and Firebase setup.',
+        'Could not open café online yet. Check Firebase setup and try again.',
       );
     }
 
@@ -54,6 +54,12 @@ class OnlineCafeService {
       final now = DateTime.now();
       final sessionId = _collection.doc().id;
       final joinCode = await _generateUniqueJoinCode();
+      if (joinCode.isEmpty || joinCode.length != joinCodeLength) {
+        return OnlineCafeResult.failure(
+          'Could not open café online yet. Check Firebase setup and try again.',
+        );
+      }
+
       final session = OnlineCafeSession(
         sessionId: sessionId,
         joinCode: joinCode,
@@ -69,10 +75,19 @@ class OnlineCafeService {
       );
 
       await _collection.doc(sessionId).set(session.toMap());
+
+      final saved = await _collection.doc(sessionId).get();
+      if (saved.exists && saved.data() != null) {
+        final parsed = OnlineCafeSession.fromMap(sessionId, saved.data()!);
+        if (parsed.joinCode.isNotEmpty) {
+          return OnlineCafeResult.success(parsed);
+        }
+      }
+
       return OnlineCafeResult.success(session);
-    } catch (_) {
+    } catch (error) {
       return OnlineCafeResult.failure(
-        'Could not open café online. Check internet and Firebase setup.',
+        'Could not open café online yet. Check Firebase setup and try again.',
       );
     }
   }

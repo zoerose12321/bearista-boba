@@ -92,12 +92,14 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   final HelperNpcState _helperNpc = HelperNpcState();
   bool _isOnlineHost = false;
   bool _isOnlineVisitor = false;
+  bool _isOpeningOnlineCafe = false;
   String? _onlineSessionId;
   String? _onlineJoinCode;
   String? _onlineHostShopName;
   String? _onlineHostProfileName;
   OnlineCafeSession? _hostedSession;
   String? _onlinePanelMessage;
+  String? _onlineCafeErrorMessage;
   StreamSubscription<OnlineCafeSession?>? _onlineSessionSub;
   Timer? _helperNpcTimer;
   Timer? _helperWorkTimer;
@@ -198,10 +200,13 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       onlineAvailable: _onlineCafeService.isAvailable,
       isOnlineHost: _isOnlineHost,
       isOnlineVisitor: _isOnlineVisitor,
+      isOpeningOnlineCafe: _isOpeningOnlineCafe,
       hostedSession: _hostedSession,
+      onlineJoinCode: _onlineJoinCode,
       onlineHostProfileName: _onlineHostProfileName,
       onlineHostShopName: _onlineHostShopName,
       onlinePanelMessage: _onlinePanelMessage,
+      onlineCafeErrorMessage: _onlineCafeErrorMessage,
       onOpenOnlineCafe: _openOnlineCafe,
       onCloseOnlineCafe: _closeOnlineCafe,
       onEnterJoinCode: _enterJoinCode,
@@ -210,80 +215,151 @@ class _ShopWorldPageState extends State<ShopWorldPage>
     );
   }
 
+  void _clearOnlineHostState({String? message, String? errorMessage}) {
+    _onlineSessionSub?.cancel();
+    _onlineSessionSub = null;
+    _isOnlineHost = false;
+    _hostedSession = null;
+    _onlineSessionId = null;
+    _onlineJoinCode = null;
+    _onlinePanelMessage = message;
+    _onlineCafeErrorMessage = errorMessage;
+  }
+
   Future<void> _openOnlineCafe() async {
+    if (_isOpeningOnlineCafe || _isOnlineHost) {
+      return;
+    }
+
     setState(() {
+      _isOpeningOnlineCafe = true;
       _onlinePanelMessage = null;
+      _onlineCafeErrorMessage = null;
     });
 
-    final result = await _onlineCafeService.createCafeSession(widget.profile);
-    if (!mounted) {
-      return;
-    }
+    try {
+      final result = await _onlineCafeService.createCafeSession(widget.profile);
+      if (!mounted) {
+        return;
+      }
 
-    if (!result.isSuccess || result.data == null) {
+      if (!result.isSuccess || result.data == null) {
+        final message = result.errorMessage ??
+            'Could not open café online yet. Check Firebase setup and try again.';
+        setState(() {
+          _isOpeningOnlineCafe = false;
+          _onlineCafeErrorMessage = message;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+        return;
+      }
+
+      final session = result.data!;
+      if (session.joinCode.isEmpty) {
+        const message =
+            'Could not open café online yet. Check Firebase setup and try again.';
+        setState(() {
+          _isOpeningOnlineCafe = false;
+          _onlineCafeErrorMessage = message;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(message)),
+        );
+        return;
+      }
+
       setState(() {
-        _onlinePanelMessage = result.errorMessage ??
-            'Could not open café online. Check internet and Firebase setup.';
+        _isOpeningOnlineCafe = false;
+        _isOnlineHost = true;
+        _isOnlineVisitor = false;
+        _hostedSession = session;
+        _onlineSessionId = session.sessionId;
+        _onlineJoinCode = session.joinCode;
+        _onlinePanelMessage = 'Share this code with a friend.';
+        _onlineCafeErrorMessage = null;
       });
-      return;
+      _listenToHostedSession(session);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      const message =
+          'Could not open café online yet. Check Firebase setup and try again.';
+      setState(() {
+        _isOpeningOnlineCafe = false;
+        _onlineCafeErrorMessage = message;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(message)),
+      );
     }
-
-    _listenToHostedSession(result.data!);
-    setState(() {
-      _isOnlineHost = true;
-      _isOnlineVisitor = false;
-      _hostedSession = result.data;
-      _onlineSessionId = result.data!.sessionId;
-      _onlineJoinCode = result.data!.joinCode;
-      _onlinePanelMessage = 'Your café is open online!';
-    });
   }
 
   void _listenToHostedSession(OnlineCafeSession session) {
     _onlineSessionSub?.cancel();
     _onlineSessionSub =
-        _onlineCafeService.watchSession(session.sessionId).listen((live) {
-      if (!mounted) {
-        return;
-      }
-      if (live == null || !live.isOpen) {
+        _onlineCafeService.watchSession(session.sessionId).listen(
+      (live) {
+        if (!mounted || !_isOnlineHost) {
+          return;
+        }
+        if (live == null) {
+          return;
+        }
+        if (!live.isOpen) {
+          setState(() {
+            _clearOnlineHostState(message: 'Online café closed.');
+          });
+          return;
+        }
         setState(() {
-          _isOnlineHost = false;
-          _hostedSession = null;
-          _onlineSessionId = null;
-          _onlineJoinCode = null;
+          _hostedSession = live;
+          _onlineJoinCode = live.joinCode.isNotEmpty
+              ? live.joinCode
+              : _onlineJoinCode;
         });
-        return;
-      }
-      setState(() {
-        _hostedSession = live;
-        _onlineJoinCode = live.joinCode;
-      });
-    });
+      },
+      onError: (_) {
+        // Keep local host state if the live listener fails.
+      },
+    );
   }
 
   Future<void> _closeOnlineCafe() async {
     final sessionId = _onlineSessionId;
     if (sessionId == null) {
+      setState(() {
+        _clearOnlineHostState();
+      });
       return;
     }
 
+    setState(() {
+      _isOpeningOnlineCafe = true;
+      _onlineCafeErrorMessage = null;
+    });
+
     final result = await _onlineCafeService.closeCafeSession(sessionId);
-    _onlineSessionSub?.cancel();
 
     if (!mounted) {
       return;
     }
 
     setState(() {
-      _isOnlineHost = false;
-      _hostedSession = null;
-      _onlineSessionId = null;
-      _onlineJoinCode = null;
-      _onlinePanelMessage = result.isSuccess
-          ? 'Online café closed.'
-          : result.errorMessage;
+      _isOpeningOnlineCafe = false;
+      _clearOnlineHostState(
+        message: result.isSuccess ? 'Online café closed.' : null,
+        errorMessage: result.isSuccess ? null : result.errorMessage,
+      );
     });
+
+    if (!result.isSuccess && result.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.errorMessage!)),
+      );
+    }
   }
 
   Future<void> _enterJoinCode() async {

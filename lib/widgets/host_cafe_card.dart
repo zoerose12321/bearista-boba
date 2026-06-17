@@ -33,7 +33,7 @@ class HostCafeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Your café is open!',
+            'Your café is online!',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: const Color(0xFF5C4A42),
