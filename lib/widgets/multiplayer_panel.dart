@@ -107,18 +107,25 @@ class MultiplayerPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final mp = multiplayerState;
     final combinedMessage = onlinePanelMessage ?? panelMessage;
+    const panelMinWidth = 260.0;
+    const panelMaxWidth = 320.0;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 2,
-      shadowColor: Colors.brown.withValues(alpha: 0.12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: theme.colorScheme.primary.withValues(alpha: 0.18),
-        ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: panelMinWidth,
+        maxWidth: panelMaxWidth,
       ),
-      child: Column(
+      child: Card(
+        margin: EdgeInsets.zero,
+        elevation: 2,
+        shadowColor: Colors.brown.withValues(alpha: 0.12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: theme.colorScheme.primary.withValues(alpha: 0.18),
+          ),
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
@@ -366,6 +373,7 @@ class MultiplayerPanel extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

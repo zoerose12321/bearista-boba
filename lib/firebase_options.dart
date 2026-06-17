@@ -26,31 +26,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'TODO_REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
-    appId: '1:000000000000:web:bearista_boba_placeholder',
-    messagingSenderId: '000000000000',
-    projectId: 'bearista-boba-dev',
-    authDomain: 'bearista-boba-dev.firebaseapp.com',
-    storageBucket: 'bearista-boba-dev.appspot.com',
+    apiKey: 'AIzaSyAhxR3QKnQovL4N-P0H5siBtw4qXToE62o',
+    appId: '1:95865025556:web:adab8e6bd60bcf2ad1e301',
+    messagingSenderId: '95865025556',
+    projectId: 'bearista-boba',
+    authDomain: 'bearista-boba.firebaseapp.com',
+    storageBucket: 'bearista-boba.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'TODO_REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
-    appId: '1:000000000000:android:bearista_boba_placeholder',
-    messagingSenderId: '000000000000',
-    projectId: 'bearista-boba-dev',
-    storageBucket: 'bearista-boba-dev.appspot.com',
+    apiKey: 'AIzaSyBrFHO4KDViaS33SAlihy1w5GvcHASyIEk',
+    appId: '1:95865025556:android:faf7c5080375b18dd1e301',
+    messagingSenderId: '95865025556',
+    projectId: 'bearista-boba',
+    storageBucket: 'bearista-boba.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'TODO_REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
-    appId: '1:000000000000:ios:bearista_boba_placeholder',
-    messagingSenderId: '000000000000',
-    projectId: 'bearista-boba-dev',
-    storageBucket: 'bearista-boba-dev.appspot.com',
+    apiKey: 'AIzaSyCLjq6UgeSjc-jrJxckBZvcZS882X_1AuQ',
+    appId: '1:95865025556:ios:b7a3e80cb439c1a0d1e301',
+    messagingSenderId: '95865025556',
+    projectId: 'bearista-boba',
+    storageBucket: 'bearista-boba.firebasestorage.app',
     iosBundleId: 'com.example.bearistaBoba',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'TODO_REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
     appId: '1:000000000000:ios:bearista_boba_placeholder',

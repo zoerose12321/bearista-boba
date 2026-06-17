@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "95865025556",
+    "project_id": "bearista-boba",
+    "storage_bucket": "bearista-boba.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:95865025556:android:faf7c5080375b18dd1e301",
+        "android_client_info": {
+          "package_name": "com.example.bearista_boba"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrFHO4KDViaS33SAlihy1w5GvcHASyIEk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

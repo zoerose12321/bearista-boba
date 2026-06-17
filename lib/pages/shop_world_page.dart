@@ -1204,16 +1204,21 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      const panelBesideMinWidth = 720.0;
+                      const panelGap = 20.0;
+                      const panelMinWidth = 260.0;
+                      const panelMaxWidth = 320.0;
+                      final panelWidth = (constraints.maxWidth * 0.28)
+                          .clamp(panelMinWidth, panelMaxWidth);
+                      final gameBoardWidth =
+                          ShopSceneLayout.contentWidthFor(constraints.maxWidth);
                       final showPanelBeside = _multiplayerPanelOpen &&
-                          constraints.maxWidth >= panelBesideMinWidth;
-                      final panelWidth = (constraints.maxWidth * 0.3)
-                          .clamp(280.0, 360.0);
-                      final cafeAreaWidth = showPanelBeside
-                          ? constraints.maxWidth - panelWidth - 12
-                          : constraints.maxWidth;
-                      final contentWidth =
-                          ShopSceneLayout.contentWidthFor(cafeAreaWidth);
+                          constraints.maxWidth >=
+                              gameBoardWidth + panelGap + panelWidth + 24;
+                      final contentWidth = gameBoardWidth;
+                      final panelHeight = showPanelBeside
+                          ? (constraints.maxHeight * 0.78).clamp(340.0, 560.0)
+                          : (constraints.maxHeight * 0.34)
+                              .clamp(220.0, 300.0);
 
                       Widget buildControls() {
                         return AnimatedBuilder(
@@ -1359,10 +1364,15 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                           ),
                           if (_multiplayerPanelOpen && !showPanelBeside) ...[
                             const SizedBox(height: 8),
-                            SizedBox(
-                              height: (constraints.maxHeight * 0.34)
-                                  .clamp(220.0, 300.0),
-                              child: _buildMultiplayerPanel(compact: true),
+                            Center(
+                              child: SizedBox(
+                                width: contentWidth.clamp(
+                                  panelMinWidth,
+                                  panelMaxWidth,
+                                ),
+                                height: panelHeight,
+                                child: _buildMultiplayerPanel(compact: true),
+                              ),
                             ),
                           ],
                           const SizedBox(height: 8),
@@ -1371,16 +1381,23 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                       );
 
                       if (showPanelBeside) {
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(child: cafeColumn),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                              width: panelWidth,
-                              child: _buildMultiplayerPanel(compact: true),
-                            ),
-                          ],
+                        return Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: gameBoardWidth,
+                                child: cafeColumn,
+                              ),
+                              SizedBox(width: panelGap),
+                              SizedBox(
+                                width: panelWidth,
+                                height: panelHeight,
+                                child: _buildMultiplayerPanel(compact: true),
+                              ),
+                            ],
+                          ),
                         );
                       }
 

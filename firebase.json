@@ -1,5 +1,1 @@
-{
-  "firestore": {
-    "rules": "firestore.rules"
-  }
-}
+{"firestore":{"rules":"firestore.rules"},"flutter":{"platforms":{"android":{"default":{"projectId":"bearista-boba","appId":"1:95865025556:android:faf7c5080375b18dd1e301","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"bearista-boba","configurations":{"android":"1:95865025556:android:faf7c5080375b18dd1e301","ios":"1:95865025556:ios:b7a3e80cb439c1a0d1e301","web":"1:95865025556:web:adab8e6bd60bcf2ad1e301"}}}}}}
