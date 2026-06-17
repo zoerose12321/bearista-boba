@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../models/local_multiplayer_state.dart';
+import '../models/online_cafe_session.dart';
 import '../models/player_character.dart';
 import '../models/shop_game_state.dart';
 import 'cute_bear_avatar.dart';
+import 'host_cafe_card.dart';
 
 /// Inline multiplayer panel for ShopWorldPage (v0.1.47+).
 class MultiplayerPanel extends StatelessWidget {
@@ -20,6 +22,18 @@ class MultiplayerPanel extends StatelessWidget {
     this.onEndLocalCafe,
     this.panelMessage,
     this.compact = false,
+    this.onlineAvailable = false,
+    this.isOnlineHost = false,
+    this.isOnlineVisitor = false,
+    this.hostedSession,
+    this.onlineHostProfileName,
+    this.onlineHostShopName,
+    this.onlinePanelMessage,
+    this.onOpenOnlineCafe,
+    this.onCloseOnlineCafe,
+    this.onEnterJoinCode,
+    this.onLeaveOnlineCafe,
+    this.onCopyJoinCode,
   });
 
   final PlayerCharacter player;
@@ -33,11 +47,38 @@ class MultiplayerPanel extends StatelessWidget {
   final VoidCallback? onEndLocalCafe;
   final String? panelMessage;
   final bool compact;
+  final bool onlineAvailable;
+  final bool isOnlineHost;
+  final bool isOnlineVisitor;
+  final OnlineCafeSession? hostedSession;
+  final String? onlineHostProfileName;
+  final String? onlineHostShopName;
+  final String? onlinePanelMessage;
+  final VoidCallback? onOpenOnlineCafe;
+  final VoidCallback? onCloseOnlineCafe;
+  final VoidCallback? onEnterJoinCode;
+  final VoidCallback? onLeaveOnlineCafe;
+  final VoidCallback? onCopyJoinCode;
+
+  String get _statusLabel {
+    if (isOnlineVisitor) {
+      final hostName = onlineHostProfileName?.trim();
+      if (hostName != null && hostName.isNotEmpty) {
+        return 'Visiting $hostName\'s Shop Online';
+      }
+      return 'Visiting Online Café';
+    }
+    if (isOnlineHost && hostedSession != null) {
+      return 'Your café is open online!';
+    }
+    return multiplayerState.statusLabel;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mp = multiplayerState;
+    final combinedMessage = onlinePanelMessage ?? panelMessage;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -94,7 +135,7 @@ class MultiplayerPanel extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      mp.statusLabel,
+                      _statusLabel,
                       style: theme.textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF5C4A42),
@@ -103,14 +144,86 @@ class MultiplayerPanel extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    'Cozy café visits with friends are on the way!',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF5C4A42),
+                  if (isOnlineVisitor) ...[
+                    Text(
+                      onlineHostShopName ?? 'Online Café',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF5C4A42),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
+                    const SizedBox(height: 6),
+                    Text(
+                      'For now, visitors earn coins for their own profile.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton(
+                      key: const Key('leave_online_cafe'),
+                      onPressed: onLeaveOnlineCafe,
+                      child: const Text('Leave Online Café'),
+                    ),
+                    const SizedBox(height: 12),
+                  ] else if (isOnlineHost && hostedSession != null) ...[
+                    HostCafeCard(
+                      session: hostedSession!,
+                      compact: compact,
+                      onCopyCode: onCopyJoinCode ?? () {},
+                      onCloseCafe: onCloseOnlineCafe ?? () {},
+                    ),
+                    const SizedBox(height: 12),
+                  ] else ...[
+                    MultiplayerOptionTile(
+                      title: 'Host Online Café',
+                      emoji: '🌐',
+                      description:
+                          'Open your restaurant online and share a short café code.',
+                      compact: compact,
+                      actionLabel: onlineAvailable
+                          ? 'Open My Café Online'
+                          : 'Online unavailable',
+                      onAction: onlineAvailable ? onOpenOnlineCafe : null,
+                      actionKey: const Key('open_online_cafe'),
+                      actionFilled: true,
+                    ),
+                    const SizedBox(height: 8),
+                    MultiplayerOptionTile(
+                      title: 'Join Online Café',
+                      emoji: '🚪',
+                      description:
+                          'Enter a friend\'s café code to visit their restaurant online.',
+                      compact: compact,
+                      actionLabel: onlineAvailable
+                          ? 'Enter Café Code'
+                          : 'Online unavailable',
+                      onAction: onlineAvailable ? onEnterJoinCode : null,
+                      actionKey: const Key('enter_cafe_code'),
+                      actionFilled: false,
+                    ),
+                  ],
+                  if (combinedMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      combinedMessage,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                  if (!onlineAvailable && !isOnlineHost && !isOnlineVisitor) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Online cafés need Firebase setup and internet. '
+                      'Local play still works!',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
                   Text(
                     mp.isHelperActive
                         ? 'Helper Bear is working.'
@@ -123,16 +236,6 @@ class MultiplayerPanel extends StatelessWidget {
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
                     ),
                   ),
-                  if (panelMessage != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      panelMessage!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
                   if (!compact) ...[
                     const SizedBox(height: 12),
                     Row(
@@ -184,16 +287,6 @@ class MultiplayerPanel extends StatelessWidget {
                     onAction: mp.isLocalCafeActive ? null : onStartLocalCafe,
                     actionKey: const Key('start_local_cafe'),
                     actionFilled: false,
-                  ),
-                  const SizedBox(height: 8),
-                  MultiplayerOptionTile(
-                    title: 'Invite Friends',
-                    emoji: '💌',
-                    description:
-                        'Online invites and friend codes are coming later.',
-                    compact: compact,
-                    actionLabel: 'Online invites later',
-                    onAction: null,
                   ),
                   if (mp.isLocalCafeActive && onEndLocalCafe != null) ...[
                     const SizedBox(height: 12),

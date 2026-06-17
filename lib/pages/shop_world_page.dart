@@ -12,15 +12,18 @@ import '../models/control_style.dart';
 import '../models/customer_visit_state.dart';
 import '../models/helper_npc_state.dart';
 import '../models/local_multiplayer_state.dart';
+import '../models/online_cafe_session.dart';
 import '../models/player_character.dart';
 import '../models/player_profile.dart';
 import '../models/shop_game_state.dart';
 import '../services/profile_storage_service.dart';
 import '../services/coin_reward_service.dart';
 import '../services/helper_npc_service.dart';
+import '../services/online_cafe_service.dart';
 import '../services/sound_effects_service.dart';
 import '../widgets/ad_placeholder_bar.dart';
 import '../widgets/cartoon_shop_scene.dart';
+import '../widgets/join_cafe_code_dialog.dart';
 import '../widgets/joy_con_control.dart';
 import '../widgets/movement_controls.dart';
 import '../widgets/multiplayer_panel.dart';
@@ -85,7 +88,17 @@ class _ShopWorldPageState extends State<ShopWorldPage>
   bool _multiplayerPanelOpen = false;
   String? _helperPanelMessage;
   final LocalMultiplayerState _localMultiplayer = LocalMultiplayerState();
+  final OnlineCafeService _onlineCafeService = OnlineCafeService();
   final HelperNpcState _helperNpc = HelperNpcState();
+  bool _isOnlineHost = false;
+  bool _isOnlineVisitor = false;
+  String? _onlineSessionId;
+  String? _onlineJoinCode;
+  String? _onlineHostShopName;
+  String? _onlineHostProfileName;
+  OnlineCafeSession? _hostedSession;
+  String? _onlinePanelMessage;
+  StreamSubscription<OnlineCafeSession?>? _onlineSessionSub;
   Timer? _helperNpcTimer;
   Timer? _helperWorkTimer;
   int? _playerTalkSlotIndex;
@@ -130,6 +143,17 @@ class _ShopWorldPageState extends State<ShopWorldPage>
 
   @override
   void dispose() {
+    _onlineSessionSub?.cancel();
+    if (_isOnlineHost && _onlineSessionId != null) {
+      unawaited(_onlineCafeService.closeCafeSession(_onlineSessionId!));
+    } else if (_isOnlineVisitor && _onlineSessionId != null) {
+      unawaited(
+        _onlineCafeService.leaveCafeSession(
+          sessionId: _onlineSessionId!,
+          visitorProfileId: widget.profile.profileId,
+        ),
+      );
+    }
     _saveCurrentProfileProgress();
     _stopJoyConMovement(resetKnob: false);
     _stopHelperNpc();
@@ -147,6 +171,207 @@ class _ShopWorldPageState extends State<ShopWorldPage>
       helperBearUnlocked: _localMultiplayer.isHelperBearUnlocked,
     );
     unawaited(widget.profileStorage.saveProfile(widget.profile));
+  }
+
+  String get _shopHeaderTitle {
+    if (_isOnlineVisitor &&
+        _onlineHostShopName != null &&
+        _onlineHostShopName!.trim().isNotEmpty) {
+      return _onlineHostShopName!.trim();
+    }
+    return widget.profile.shopTitle;
+  }
+
+  MultiplayerPanel _buildMultiplayerPanel({required bool compact}) {
+    return MultiplayerPanel(
+      player: widget.player,
+      gameState: widget.gameState,
+      multiplayerState: _localMultiplayer,
+      onClose: _closeMultiplayerPanel,
+      onPurchaseHelper: _purchaseHelperBear,
+      onActivateHelper: _activateHelperBear,
+      onSendHelperHome: _sendHelperHome,
+      onStartLocalCafe: _startLocalCafe,
+      onEndLocalCafe: _endLocalCafe,
+      panelMessage: _helperPanelMessage,
+      compact: compact,
+      onlineAvailable: _onlineCafeService.isAvailable,
+      isOnlineHost: _isOnlineHost,
+      isOnlineVisitor: _isOnlineVisitor,
+      hostedSession: _hostedSession,
+      onlineHostProfileName: _onlineHostProfileName,
+      onlineHostShopName: _onlineHostShopName,
+      onlinePanelMessage: _onlinePanelMessage,
+      onOpenOnlineCafe: _openOnlineCafe,
+      onCloseOnlineCafe: _closeOnlineCafe,
+      onEnterJoinCode: _enterJoinCode,
+      onLeaveOnlineCafe: _leaveOnlineCafe,
+      onCopyJoinCode: _copyJoinCode,
+    );
+  }
+
+  Future<void> _openOnlineCafe() async {
+    setState(() {
+      _onlinePanelMessage = null;
+    });
+
+    final result = await _onlineCafeService.createCafeSession(widget.profile);
+    if (!mounted) {
+      return;
+    }
+
+    if (!result.isSuccess || result.data == null) {
+      setState(() {
+        _onlinePanelMessage = result.errorMessage ??
+            'Could not open café online. Check internet and Firebase setup.';
+      });
+      return;
+    }
+
+    _listenToHostedSession(result.data!);
+    setState(() {
+      _isOnlineHost = true;
+      _isOnlineVisitor = false;
+      _hostedSession = result.data;
+      _onlineSessionId = result.data!.sessionId;
+      _onlineJoinCode = result.data!.joinCode;
+      _onlinePanelMessage = 'Your café is open online!';
+    });
+  }
+
+  void _listenToHostedSession(OnlineCafeSession session) {
+    _onlineSessionSub?.cancel();
+    _onlineSessionSub =
+        _onlineCafeService.watchSession(session.sessionId).listen((live) {
+      if (!mounted) {
+        return;
+      }
+      if (live == null || !live.isOpen) {
+        setState(() {
+          _isOnlineHost = false;
+          _hostedSession = null;
+          _onlineSessionId = null;
+          _onlineJoinCode = null;
+        });
+        return;
+      }
+      setState(() {
+        _hostedSession = live;
+        _onlineJoinCode = live.joinCode;
+      });
+    });
+  }
+
+  Future<void> _closeOnlineCafe() async {
+    final sessionId = _onlineSessionId;
+    if (sessionId == null) {
+      return;
+    }
+
+    final result = await _onlineCafeService.closeCafeSession(sessionId);
+    _onlineSessionSub?.cancel();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isOnlineHost = false;
+      _hostedSession = null;
+      _onlineSessionId = null;
+      _onlineJoinCode = null;
+      _onlinePanelMessage = result.isSuccess
+          ? 'Online café closed.'
+          : result.errorMessage;
+    });
+  }
+
+  Future<void> _enterJoinCode() async {
+    final code = await JoinCafeCodeDialog.show(context);
+    if (code == null || !mounted) {
+      return;
+    }
+    await _joinOnlineCafe(code);
+  }
+
+  Future<void> _joinOnlineCafe(String joinCode) async {
+    if (_isOnlineHost) {
+      setState(() {
+        _onlinePanelMessage =
+            'Close your hosted café before joining another one.';
+      });
+      return;
+    }
+
+    setState(() {
+      _onlinePanelMessage = null;
+    });
+
+    final result = await _onlineCafeService.joinCafeSession(
+      joinCode: joinCode,
+      visitorProfile: widget.profile,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!result.isSuccess || result.data == null) {
+      setState(() {
+        _onlinePanelMessage =
+            result.errorMessage ?? 'Could not find that café code.';
+      });
+      return;
+    }
+
+    final session = result.data!;
+    setState(() {
+      _isOnlineVisitor = true;
+      _onlineSessionId = session.sessionId;
+      _onlineJoinCode = session.joinCode;
+      _onlineHostShopName = session.hostShopName;
+      _onlineHostProfileName = session.hostProfileName;
+      _onlinePanelMessage = 'Joined ${session.hostShopName}!';
+    });
+  }
+
+  Future<void> _leaveOnlineCafe() async {
+    final sessionId = _onlineSessionId;
+    if (sessionId != null) {
+      await _onlineCafeService.leaveCafeSession(
+        sessionId: sessionId,
+        visitorProfileId: widget.profile.profileId,
+      );
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isOnlineVisitor = false;
+      _onlineSessionId = null;
+      _onlineJoinCode = null;
+      _onlineHostShopName = null;
+      _onlineHostProfileName = null;
+      _onlinePanelMessage = 'Returned to your café.';
+    });
+  }
+
+  Future<void> _copyJoinCode() async {
+    final code = _onlineJoinCode ?? _hostedSession?.joinCode;
+    if (code == null) {
+      return;
+    }
+
+    await Clipboard.setData(ClipboardData(text: code));
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Café code copied!')),
+    );
   }
 
   void _onJoyConDirection(int deltaCol, int deltaRow) {
@@ -989,7 +1214,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                             child: SizedBox(
                               width: contentWidth,
                               child: ShopWorldHeader(
-                                title: widget.profile.shopTitle,
+                                title: _shopHeaderTitle,
                                 coins: widget.gameState.coins,
                                 onMultiplayerPressed: _toggleMultiplayerPanel,
                                 multiplayerActive: _multiplayerPanelOpen,
@@ -1026,19 +1251,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                             SizedBox(
                               height: (constraints.maxHeight * 0.34)
                                   .clamp(220.0, 300.0),
-                              child: MultiplayerPanel(
-                                player: widget.player,
-                                gameState: widget.gameState,
-                                multiplayerState: _localMultiplayer,
-                                onClose: _closeMultiplayerPanel,
-                                onPurchaseHelper: _purchaseHelperBear,
-                                onActivateHelper: _activateHelperBear,
-                                onSendHelperHome: _sendHelperHome,
-                                onStartLocalCafe: _startLocalCafe,
-                                onEndLocalCafe: _endLocalCafe,
-                                panelMessage: _helperPanelMessage,
-                                compact: true,
-                              ),
+                              child: _buildMultiplayerPanel(compact: true),
                             ),
                           ],
                           const SizedBox(height: 8),
@@ -1054,19 +1267,7 @@ class _ShopWorldPageState extends State<ShopWorldPage>
                             const SizedBox(width: 12),
                             SizedBox(
                               width: panelWidth,
-                              child: MultiplayerPanel(
-                                player: widget.player,
-                                gameState: widget.gameState,
-                                multiplayerState: _localMultiplayer,
-                                onClose: _closeMultiplayerPanel,
-                                onPurchaseHelper: _purchaseHelperBear,
-                                onActivateHelper: _activateHelperBear,
-                                onSendHelperHome: _sendHelperHome,
-                                onStartLocalCafe: _startLocalCafe,
-                                onEndLocalCafe: _endLocalCafe,
-                                panelMessage: _helperPanelMessage,
-                                compact: true,
-                              ),
+                              child: _buildMultiplayerPanel(compact: true),
                             ),
                           ],
                         );

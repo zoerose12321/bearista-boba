@@ -80,6 +80,17 @@ class PlayerProfile {
     return '$name\'s Shop';
   }
 
+  /// Lightweight avatar summary for online café sessions.
+  Map<String, dynamic> toOnlineCharacterSummary() {
+    return {
+      'playerName': playerName,
+      'fur': fur.name,
+      'accent': accent.name,
+      'accessory': accessory.name,
+      'equippedOutfitId': equippedOutfitId,
+    };
+  }
+
   static PlayerProfile createNew(String name) {
     final now = DateTime.now();
     return PlayerProfile(
