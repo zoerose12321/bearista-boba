@@ -26,6 +26,7 @@ class MultiplayerPanel extends StatelessWidget {
     this.isOnlineHost = false,
     this.isOnlineVisitor = false,
     this.isOpeningOnlineCafe = false,
+    this.isOnlineFallbackHost = false,
     this.hostedSession,
     this.onlineJoinCode,
     this.onlineHostProfileName,
@@ -54,6 +55,7 @@ class MultiplayerPanel extends StatelessWidget {
   final bool isOnlineHost;
   final bool isOnlineVisitor;
   final bool isOpeningOnlineCafe;
+  final bool isOnlineFallbackHost;
   final OnlineCafeSession? hostedSession;
   final String? onlineJoinCode;
   final String? onlineHostProfileName;
@@ -74,31 +76,24 @@ class MultiplayerPanel extends StatelessWidget {
       }
       return 'Visiting Online Café';
     }
-    if (isOnlineHost && _visibleJoinCode.isNotEmpty) {
-      return 'Your café is online!';
+    if (_visibleJoinCode.isNotEmpty) {
+      return isOnlineFallbackHost
+          ? 'Temporary café code ready'
+          : 'Your café is online!';
     }
     return multiplayerState.statusLabel;
   }
 
-  String get _visibleJoinCode {
-    final sessionCode = hostedSession?.joinCode.trim();
-    if (sessionCode != null && sessionCode.isNotEmpty) {
-      return sessionCode;
-    }
-    return onlineJoinCode?.trim() ?? '';
-  }
+  bool get _showHostCodeCard =>
+      !isOnlineVisitor && !isOpeningOnlineCafe && _visibleJoinCode.isNotEmpty;
 
-  OnlineCafeSession? get _hostCardSession {
-    if (hostedSession != null) {
-      return hostedSession;
-    }
-    final code = _visibleJoinCode;
-    if (!isOnlineHost || code.isEmpty) {
-      return null;
+  OnlineCafeSession get _hostCardSession {
+    if (hostedSession != null && hostedSession!.joinCode.isNotEmpty) {
+      return hostedSession!;
     }
     return OnlineCafeSession(
       sessionId: 'local-host',
-      joinCode: code,
+      joinCode: _visibleJoinCode,
       hostProfileId: '',
       hostProfileName: player.displayName,
       hostShopName: 'Your Shop',
@@ -108,7 +103,16 @@ class MultiplayerPanel extends StatelessWidget {
       isOpen: true,
       visitorCount: 0,
       visitorSummaries: const [],
+      isLocalFallback: isOnlineFallbackHost,
     );
+  }
+
+  String get _visibleJoinCode {
+    final sessionCode = hostedSession?.joinCode.trim();
+    if (sessionCode != null && sessionCode.isNotEmpty) {
+      return sessionCode;
+    }
+    return onlineJoinCode?.trim() ?? '';
   }
 
   @override
@@ -203,10 +207,11 @@ class MultiplayerPanel extends StatelessWidget {
                       child: const Text('Leave Online Café'),
                     ),
                     const SizedBox(height: 12),
-                  ] else if (isOnlineHost && _hostCardSession != null) ...[
+                  ] else if (_showHostCodeCard) ...[
                     HostCafeCard(
-                      session: _hostCardSession!,
+                      session: _hostCardSession,
                       compact: compact,
+                      isLocalFallback: isOnlineFallbackHost,
                       onCopyCode: onCopyJoinCode ?? () {},
                       onCloseCafe: onCloseOnlineCafe ?? () {},
                     ),

@@ -9,12 +9,14 @@ class HostCafeCard extends StatelessWidget {
     required this.onCopyCode,
     required this.onCloseCafe,
     this.compact = false,
+    this.isLocalFallback = false,
   });
 
   final OnlineCafeSession session;
   final VoidCallback onCopyCode;
   final VoidCallback onCloseCafe;
   final bool compact;
+  final bool isLocalFallback;
 
   @override
   Widget build(BuildContext context) {
@@ -33,29 +35,32 @@ class HostCafeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Your café is online!',
+            'Your café code',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: const Color(0xFF5C4A42),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
-            'Code: ${session.joinCode}',
+            session.joinCode,
+            textAlign: TextAlign.center,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               letterSpacing: 2,
               color: theme.colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
-            'Share this code with a friend.',
+            isLocalFallback
+                ? 'Temporary code created. Online sharing may need Firebase setup.'
+                : 'Share this code with a friend.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
             ),
           ),
-          if (session.visitorCount > 0) ...[
+          if (!isLocalFallback && session.visitorCount > 0) ...[
             const SizedBox(height: 4),
             Text(
               '${session.visitorCount} visitor${session.visitorCount == 1 ? '' : 's'} joined',

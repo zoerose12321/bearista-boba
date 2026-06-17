@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/online_cafe_session.dart';
 import '../models/player_profile.dart';
@@ -10,14 +11,16 @@ import 'firebase_bootstrap.dart';
 ///
 /// TODO: Add production Firestore security rules before public release.
 class OnlineCafeService {
-  OnlineCafeService({this._firestore});
+  OnlineCafeService({this._firestore, Random? random})
+      : _random = random ?? Random();
 
   static const collectionName = 'onlineCafeSessions';
   static const joinCodeLength = 6;
+  static const createSessionTimeout = Duration(seconds: 5);
   static const _codeChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
   final FirebaseFirestore? _firestore;
-  final Random _random = Random();
+  final Random _random;
 
   bool get isAvailable => FirebaseBootstrap.isReady;
 
@@ -39,10 +42,39 @@ class OnlineCafeService {
     return raw.trim().replaceAll(RegExp(r'\s+'), '').toUpperCase();
   }
 
+  static String generateLocalFallbackCode([Random? random]) {
+    final source = random ?? Random();
+    final buffer = StringBuffer();
+    for (var i = 0; i < joinCodeLength; i++) {
+      buffer.write(_codeChars[source.nextInt(_codeChars.length)]);
+    }
+    return buffer.toString();
+  }
+
+  /// Local-only café session when Firestore is unavailable (v0.1.63+).
+  OnlineCafeSession createLocalFallbackSession(PlayerProfile hostProfile) {
+    final now = DateTime.now();
+    return OnlineCafeSession(
+      sessionId: 'local_${now.millisecondsSinceEpoch}',
+      joinCode: generateLocalFallbackCode(_random),
+      hostProfileId: hostProfile.profileId,
+      hostProfileName: hostProfile.profileName,
+      hostShopName: hostProfile.shopTitle,
+      hostCharacter: hostProfile.toOnlineCharacterSummary(),
+      createdAt: now,
+      updatedAt: now,
+      isOpen: true,
+      visitorCount: 0,
+      visitorSummaries: const [],
+      isLocalFallback: true,
+    );
+  }
+
   Future<OnlineCafeResult<OnlineCafeSession>> createCafeSession(
     PlayerProfile hostProfile,
   ) async {
     if (!isAvailable) {
+      debugPrint('createCafeSession skipped: Firebase is not ready.');
       return OnlineCafeResult.failure(
         'Could not open café online yet. Check Firebase setup and try again.',
       );
@@ -55,6 +87,7 @@ class OnlineCafeService {
       final sessionId = _collection.doc().id;
       final joinCode = await _generateUniqueJoinCode();
       if (joinCode.isEmpty || joinCode.length != joinCodeLength) {
+        debugPrint('createCafeSession failed: invalid join code "$joinCode".');
         return OnlineCafeResult.failure(
           'Could not open café online yet. Check Firebase setup and try again.',
         );
@@ -76,16 +109,10 @@ class OnlineCafeService {
 
       await _collection.doc(sessionId).set(session.toMap());
 
-      final saved = await _collection.doc(sessionId).get();
-      if (saved.exists && saved.data() != null) {
-        final parsed = OnlineCafeSession.fromMap(sessionId, saved.data()!);
-        if (parsed.joinCode.isNotEmpty) {
-          return OnlineCafeResult.success(parsed);
-        }
-      }
-
       return OnlineCafeResult.success(session);
-    } catch (error) {
+    } catch (error, stackTrace) {
+      debugPrint('createCafeSession failed: $error');
+      debugPrint('$stackTrace');
       return OnlineCafeResult.failure(
         'Could not open café online yet. Check Firebase setup and try again.',
       );
@@ -277,10 +304,6 @@ class OnlineCafeService {
   }
 
   String _randomJoinCode() {
-    final buffer = StringBuffer();
-    for (var i = 0; i < joinCodeLength; i++) {
-      buffer.write(_codeChars[_random.nextInt(_codeChars.length)]);
-    }
-    return buffer.toString();
+    return generateLocalFallbackCode(_random);
   }
 }
